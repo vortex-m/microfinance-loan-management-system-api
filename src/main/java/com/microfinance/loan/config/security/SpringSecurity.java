@@ -1,6 +1,6 @@
 package com.microfinance.loan.config.security;
 
-import com.microfinance.loan.common.service.impl.UserServiceImpl;
+import com.microfinance.loan.common.service.impl.UserDetailsServiceImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -19,9 +19,9 @@ import org.springframework.security.web.SecurityFilterChain;
 //@Profile("prod")
 public class SpringSecurity {
 
-    private final UserServiceImpl userService;
+    private final UserDetailsServiceImpl userService;
 
-    public SpringSecurity(UserServiceImpl userService) {
+    public SpringSecurity(UserDetailsServiceImpl userService) {
         this.userService = userService;
     }
 
@@ -30,10 +30,10 @@ public class SpringSecurity {
 
 
         return http.authorizeHttpRequests(request -> request
-//                        .requestMatchers(HttpMethod.POST, "/user", "/user/").permitAll()
+//                        .requestMatchers(HttpMethod.POST, "/user", "/officer/", "/manager/").permitAll()
                         .requestMatchers("/public/**").permitAll()
-                        .requestMatchers("/officer/**", "/user/**", "/").authenticated()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/officer/**", "/user/**", "/agent/**").authenticated()
+                        .requestMatchers("/manager/**").hasRole("MANAGER")
                         .anyRequest().permitAll())
                 .httpBasic(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
