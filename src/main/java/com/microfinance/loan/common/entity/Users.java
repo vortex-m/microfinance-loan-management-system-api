@@ -8,13 +8,13 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "user")
+@Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User {
+public class Users {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,6 +31,9 @@ public class User {
 
     @Column(nullable = false, unique = true)
     private String phone;
+
+    @Column(nullable = false)
+    private Boolean isHome;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -52,6 +55,9 @@ public class User {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         this.status = UserStatus.ACTIVE;
+        if (this.isHome == null) {
+            this.isHome = false;
+        }
     }
 
     @PreUpdate

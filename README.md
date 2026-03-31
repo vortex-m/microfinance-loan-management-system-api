@@ -1,6 +1,6 @@
 # Microfinance Loan Management System API
 
-A Spring Boot backend for microfinance loan operations, including user and role workflows, loan lifecycle handling, and repayment tracking.
+A Spring Boot backend for microfinance loan operations, including users and role workflows, loan lifecycle handling, and repayment tracking.
 
 This repository is currently in an early stage: module structure and route scaffolding are in place, with core business APIs being implemented incrementally.
 
@@ -33,7 +33,7 @@ This API is intended to support small lending organizations by centralizing day-
 What is currently available in code:
 
 - Spring Boot project setup with Java 17 and Maven
-- package-wise module separation (`auth`, `loan`, `payment`, `user`, etc.)
+- package-wise module separation (`auth`, `loan`, `payment`, `users`, etc.)
 - profile-based environment configuration (`dev`, `test`)
 - initial controller route scaffolding for major modules
 - working health-check endpoint
@@ -61,7 +61,7 @@ What is in progress:
 Main domain packages under `src/main/java/com/microfinance/loan`:
 
 - `auth` - authentication and authorization APIs (scaffolded)
-- `user` - user-related APIs (scaffolded)
+- `users` - users-related APIs (scaffolded)
 - `manager` - manager operations (scaffolded)
 - `officer` - loan officer operations (scaffolded)
 - `agent` - field agent operations (scaffolded)
@@ -90,7 +90,7 @@ loan-management-system-api/
     |   |   |-- manager/
     |   |   |-- officer/
     |   |   |-- payment/
-    |   |   `-- user/
+    |   |   `-- users/
     |   `-- resources/
     |       |-- application.yml
     |       |-- application-dev.yml

@@ -15,3 +15,7 @@ spring:
     init:
       mode: never
 
+file:
+  storage-type: local
+  upload-dir: target/test-uploads
+
