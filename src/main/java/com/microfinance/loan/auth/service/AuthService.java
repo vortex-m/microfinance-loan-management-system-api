@@ -9,28 +9,39 @@ import com.microfinance.loan.common.entity.Users;
 import com.microfinance.loan.common.enums.Role;
 import com.microfinance.loan.common.repository.UserRepository;
 import com.microfinance.loan.common.service.impl.UserDetailsServiceImpl;
+import com.microfinance.loan.manager.entity.ManagerProfile;
+import com.microfinance.loan.manager.repository.ManagerProfileRepository;
+import com.microfinance.loan.user.entity.UserProfile;
+import com.microfinance.loan.user.repository.UserProfileRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @Service
 public class AuthService {
 
+	private final UserProfileRepository userProfileRepository;
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtUtil jwtUtil;
 	private final UserDetailsServiceImpl userDetailsService;
+	private final ManagerProfileRepository managerProfileRepository;
 
 	public AuthService(UserRepository userRepository,
 					   PasswordEncoder passwordEncoder,
 					   JwtUtil jwtUtil,
-					   UserDetailsServiceImpl userDetailsService) {
+					   UserDetailsServiceImpl userDetailsService,
+					   UserProfileRepository userProfileRepository,
+					   ManagerProfileRepository managerProfileRepository) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtUtil = jwtUtil;
 		this.userDetailsService = userDetailsService;
+		this.userProfileRepository = userProfileRepository;
+		this.managerProfileRepository = managerProfileRepository;
 	}
 
 	@Transactional
@@ -53,6 +64,8 @@ public class AuthService {
 				.build();
 
 		Users saved = userRepository.save(user);
+		ensureUserProfile(saved);
+		ensureManagerProfile(saved);
 
 		return RegisterResponse.builder()
 				.userId(saved.getId())
@@ -66,6 +79,7 @@ public class AuthService {
 				.build();
 	}
 
+	@Transactional
 	public LoginResponse login(LoginRequest request) {
 		String loginId = request.getLoginId().trim();
 		Users user = userDetailsService.resolveUser(loginId)
@@ -74,6 +88,8 @@ public class AuthService {
 		if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
 			throw new IllegalArgumentException("Invalid credentials");
 		}
+
+		updateManagerLastLogin(user);
 
 		String accessToken = jwtUtil.generateToken(loginId, Map.of("role", user.getRole().name(), "uid", user.getId()));
 
@@ -98,5 +114,57 @@ public class AuthService {
 			return "Login successful using code/email: " + loginId;
 		}
 		return "Login successful";
+	}
+
+	private void ensureUserProfile(Users user) {
+		if(user == null || user.getRole() != Role.USER || user.getId() == null){
+			return;
+		}
+		if(userProfileRepository.existsByUsersId(user.getId())){
+			return;
+		}
+
+		UserProfile userProfile = UserProfile.builder()
+				.users(user)
+				.build();
+		userProfileRepository.save(userProfile);
+	}
+
+	private void ensureManagerProfile(Users user) {
+		if (user == null || user.getRole() != Role.MANAGER || user.getId() == null) {
+			return;
+		}
+		if (managerProfileRepository.existsByUsersId(user.getId())) {
+			return;
+		}
+
+		String managerCode = "MGR" + String.format("%05d", user.getId());
+		ManagerProfile profile = ManagerProfile.builder()
+				.users(user)
+				.managerCode(managerCode)
+				.accessLevel("STANDARD")
+				.build();
+		managerProfileRepository.save(profile);
+	}
+
+	private void updateManagerLastLogin(Users user) {
+		if (user == null || user.getRole() != Role.MANAGER || user.getId() == null) {
+			return;
+		}
+
+		ManagerProfile profile = managerProfileRepository.findByUsersId(user.getId())
+				.orElseGet(() -> {
+					String managerCode = "MGR" + String.format("%05d", user.getId());
+					return managerProfileRepository.save(
+							ManagerProfile.builder()
+									.users(user)
+									.managerCode(managerCode)
+									.accessLevel("STANDARD")
+									.build()
+					);
+				});
+
+		profile.setLastLoginAt(LocalDateTime.now());
+		managerProfileRepository.save(profile);
 	}
 }

@@ -6,31 +6,32 @@ import com.microfinance.loan.common.service.FileStorageService;
 import com.microfinance.loan.user.dto.request.KycUploadRequest;
 import com.microfinance.loan.user.dto.response.KycStatusResponse;
 import com.microfinance.loan.user.entity.KycDocument;
-import com.microfinance.loan.user.repository.KycRepository;
+import com.microfinance.loan.user.repository.KycDocumentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
-public class UserService {
+public class UserKycService {
 
 	private final UserRepository userRepository;
-	private final KycRepository kycRepository;
+	private final KycDocumentRepository kycDocumentRepository;
 	private final FileStorageService fileStorageService;
 
-	public UserService(UserRepository userRepository, KycRepository kycRepository, FileStorageService fileStorageService) {
+	public UserKycService(UserRepository userRepository,
+						  KycDocumentRepository kycDocumentRepository,
+						  FileStorageService fileStorageService) {
 		this.userRepository = userRepository;
-		this.kycRepository = kycRepository;
+		this.kycDocumentRepository = kycDocumentRepository;
 		this.fileStorageService = fileStorageService;
 	}
 
-	public KycStatusResponse.KycDocumentItem uploadKycDocument(Long userId,
-															   KycUploadRequest request,
-															   MultipartFile file) throws IOException {
+	public KycStatusResponse.KycDocumentItem uploadKycDocument(Long userId, KycUploadRequest request, MultipartFile file) throws IOException {
 		Users user = userRepository.findById(userId)
 				.orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
 
@@ -41,17 +42,17 @@ public class UserService {
 				.fileType(request.getDocumentType())
 				.documentNumber(request.getDocumentNumber())
 				.fileUrl(fileUrl)
-				.fileName(StringUtils.cleanPath(file.getOriginalFilename()))
+				.fileName(StringUtils.cleanPath(Objects.requireNonNullElse(file.getOriginalFilename(), "uploaded-file")))
 				.mimeType(file.getContentType())
 				.fileSize(String.valueOf(file.getSize()))
 				.build();
 
-		KycDocument saved = kycRepository.save(document);
+		KycDocument saved = kycDocumentRepository.save(document);
 		return mapToItem(saved);
 	}
 
 	public KycStatusResponse getKycStatus(Long userId) {
-		List<KycStatusResponse.KycDocumentItem> documents = kycRepository.findByUserIdOrderByCreatedAtDesc(userId)
+		List<KycStatusResponse.KycDocumentItem> documents = kycDocumentRepository.findByUserIdOrderByCreatedAtDesc(userId)
 				.stream()
 				.map(this::mapToItem)
 				.collect(Collectors.toList());

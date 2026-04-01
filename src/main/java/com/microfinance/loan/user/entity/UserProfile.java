@@ -29,7 +29,6 @@ public class UserProfile {
     private String fatherName;
     private String motherName;
 
-    @Column(nullable = false)
     private LocalDate dateOfBirth;
 
     private String gender;

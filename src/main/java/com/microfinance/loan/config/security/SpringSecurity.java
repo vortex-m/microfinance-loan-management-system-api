@@ -11,6 +11,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -35,14 +36,17 @@ public class SpringSecurity {
 
 
         return http.authorizeHttpRequests(request -> request
-                        .requestMatchers("/api/auth/**", "/api/health-check").permitAll()
-                        .requestMatchers("/api/users/**").hasRole("USER")
-                        .requestMatchers("/api/agents/**").hasRole("AGENT")
-                        .requestMatchers("/api/officers/**").hasRole("OFFICER")
-                        .requestMatchers("/api/manager/**").hasRole("MANAGER")
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/auth/**", "/health-check").permitAll()
+                        .requestMatchers("/users/**").hasRole("USER")
+                        .requestMatchers("/agents/**").hasRole("AGENT")
+                        .requestMatchers("/officers/**").hasRole("OFFICER")
+                        .requestMatchers("/manager/**").hasRole("MANAGER")
                         .anyRequest().authenticated())
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> {})
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authenticationProvider(authenticationProvider(passEncoder()))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }

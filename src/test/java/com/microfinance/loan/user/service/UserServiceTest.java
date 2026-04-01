@@ -7,7 +7,7 @@ import com.microfinance.loan.common.service.FileStorageService;
 import com.microfinance.loan.user.dto.request.KycUploadRequest;
 import com.microfinance.loan.user.dto.response.KycStatusResponse;
 import com.microfinance.loan.user.entity.KycDocument;
-import com.microfinance.loan.user.repository.KycRepository;
+import com.microfinance.loan.user.repository.KycDocumentRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -32,13 +32,13 @@ class UserServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private KycRepository kycRepository;
+    private KycDocumentRepository kycDocumentRepository;
 
     @Mock
     private FileStorageService fileStorageService;
 
     @InjectMocks
-    private UserService userService;
+    private UserKycService userKycService;
 
     @Test
     void uploadKycDocument_shouldStoreS3UrlInDatabase() throws IOException {
@@ -47,7 +47,7 @@ class UserServiceTest {
         when(fileStorageService.storeFile(any(), eq("kyc/10"))).thenReturn("https://bucket.s3.ap-south-1.amazonaws.com/kyc/10/doc.png");
 
         ArgumentCaptor<KycDocument> captor = ArgumentCaptor.forClass(KycDocument.class);
-        when(kycRepository.save(captor.capture())).thenAnswer(invocation -> {
+        when(kycDocumentRepository.save(captor.capture())).thenAnswer(invocation -> {
             KycDocument doc = invocation.getArgument(0);
             doc.setId(99L);
             return doc;
@@ -60,7 +60,7 @@ class UserServiceTest {
 
         MockMultipartFile file = new MockMultipartFile("file", "doc.png", "image/png", "content".getBytes());
 
-        KycStatusResponse.KycDocumentItem item = userService.uploadKycDocument(10L, request, file);
+        KycStatusResponse.KycDocumentItem item = userKycService.uploadKycDocument(10L, request, file);
 
         assertNotNull(item);
         assertEquals("https://bucket.s3.ap-south-1.amazonaws.com/kyc/10/doc.png", captor.getValue().getFileUrl());

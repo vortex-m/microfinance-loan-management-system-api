@@ -7,6 +7,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface KycRepository extends JpaRepository<KycDocument, Long> {
+public interface KycDocumentRepository extends JpaRepository<KycDocument, Long> {
 	List<KycDocument> findByUserIdOrderByCreatedAtDesc(Long userId);
 }

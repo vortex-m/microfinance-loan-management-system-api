@@ -4,7 +4,7 @@ import com.microfinance.loan.common.dto.ApiResponse;
 import com.microfinance.loan.common.enums.FileType;
 import com.microfinance.loan.user.dto.request.KycUploadRequest;
 import com.microfinance.loan.user.dto.response.KycStatusResponse;
-import com.microfinance.loan.user.service.UserService;
+import com.microfinance.loan.user.service.UserKycService;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,10 +22,10 @@ import java.io.IOException;
 @RequestMapping("/users")
 public class UserController {
 
-	private final UserService userService;
+	private final UserKycService userKycService;
 
-	public UserController(UserService userService) {
-		this.userService = userService;
+	public UserController(UserKycService userKycService) {
+		this.userKycService = userKycService;
 	}
 
 
@@ -42,13 +42,13 @@ public class UserController {
 				.documentNumber(documentNumber)
 				.build();
 
-		KycStatusResponse.KycDocumentItem item = userService.uploadKycDocument(userId, request, file);
+		KycStatusResponse.KycDocumentItem item = userKycService.uploadKycDocument(userId, request, file);
 		return ApiResponse.success("KYC document uploaded successfully", item);
 	}
 
 	@PreAuthorize("hasRole('USER') and @userAccessGuard.canAccessUser(#userId, authentication)")
 	@GetMapping("/{userId}/kyc")
 	public ApiResponse<KycStatusResponse> getKycStatus(@PathVariable Long userId) {
-		return ApiResponse.success("KYC status fetched", userService.getKycStatus(userId));
+		return ApiResponse.success("KYC status fetched", userKycService.getKycStatus(userId));
 	}
 }

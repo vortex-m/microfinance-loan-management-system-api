@@ -1,27 +1,15 @@
 package com.microfinance.loan.manager.service;
 
-import com.microfinance.loan.agent.repository.AgentProfileRepository;
-import com.microfinance.loan.common.entity.Users;
 import com.microfinance.loan.common.enums.Role;
-import com.microfinance.loan.common.repository.UserRepository;
-import com.microfinance.loan.common.service.MailService;
 import com.microfinance.loan.manager.dto.request.CreateStaffRequest;
 import com.microfinance.loan.manager.dto.response.StaffCreateResponse;
-import com.microfinance.loan.officer.repository.OfficerProfileRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,93 +17,64 @@ import static org.mockito.Mockito.when;
 class ManagerServiceTest {
 
     @Mock
-    private UserRepository userRepository;
-
-    @Mock
-    private AgentProfileRepository agentProfileRepository;
-
-    @Mock
-    private OfficerProfileRepository officerProfileRepository;
-
-    @Mock
-    private PasswordEncoder passwordEncoder;
-
-    @Mock
-    private MailService mailService;
+    private StaffService staffService;
 
     @InjectMocks
     private ManagerService managerService;
 
     @Test
-    void createOfficer_shouldCreateOfficerAndSendEmail() {
+    void createOfficer_shouldDelegateToStaffService() {
         CreateStaffRequest request = CreateStaffRequest.builder()
                 .role(Role.OFFICER)
-                .name("Ravi Officer")
-                .email("ravi.officer@example.com")
+                .name("Ravi Kumar")
+                .email("mayank657585@gmail.com")
                 .phone("9876543211")
                 .code("OFF001")
-                .designation("Loan Officer")
-                .department("Credit")
-                .branch("Bhopal")
-                .branchCode("BPL01")
-                .address("Bhopal")
                 .build();
 
-        when(officerProfileRepository.existsByOfficerCode("OFF001")).thenReturn(false);
-        when(userRepository.existsByEmail("ravi.officer@example.com")).thenReturn(false);
-        when(userRepository.existsByPhone("9876543211")).thenReturn(false);
-        when(passwordEncoder.encode(anyString())).thenReturn("encoded-password");
-        when(userRepository.save(any(Users.class))).thenAnswer(invocation -> {
-            Users user = invocation.getArgument(0);
-            user.setId(21L);
-            return user;
-        });
-        doNothing().when(mailService).sendStaffCredentials(anyString(), anyString(), anyString(), anyString(), anyString());
+        StaffCreateResponse expected = StaffCreateResponse.builder()
+                .userId(21L)
+                .role(Role.OFFICER)
+                .code("OFF001")
+                .message("OFFICER created and credentials sent on email")
+                .build();
 
-        StaffCreateResponse response = managerService.createOfficer(request);
+        when(staffService.createOfficer(request)).thenReturn(expected);
 
-        assertEquals(21L, response.getUserId());
-        assertEquals(Role.OFFICER, response.getRole());
-        assertEquals("OFF001", response.getCode());
-        assertTrue(response.getTempPassword().startsWith("OFF001@"));
-        assertEquals("OFFICER created and credentials sent on email", response.getMessage());
+        StaffCreateResponse actual = managerService.createOfficer(request);
 
-        ArgumentCaptor<Users> userCaptor = ArgumentCaptor.forClass(Users.class);
-        verify(userRepository).save(userCaptor.capture());
-        assertEquals("encoded-password", userCaptor.getValue().getPassword());
-        assertEquals(Role.OFFICER, userCaptor.getValue().getRole());
+        assertEquals(expected.getUserId(), actual.getUserId());
+        assertEquals(expected.getRole(), actual.getRole());
+        assertEquals(expected.getCode(), actual.getCode());
+        assertEquals(expected.getMessage(), actual.getMessage());
+        verify(staffService).createOfficer(request);
     }
 
     @Test
-    void createOfficer_shouldReturnWarningWhenEmailFails() {
+    void createAgent_shouldDelegateToStaffService() {
         CreateStaffRequest request = CreateStaffRequest.builder()
-                .role(Role.OFFICER)
-                .name("Ravi Officer")
-                .email("ravi.officer@example.com")
-                .phone("9876543211")
-                .code("OFF001")
+                .role(Role.AGENT)
+                .name("Rohan Kumar")
+                .email("mayank6343@gmail.com")
+                .phone("9876543222")
+                .code("AG001")
                 .build();
 
-        when(officerProfileRepository.existsByOfficerCode("OFF001")).thenReturn(false);
-        when(userRepository.existsByEmail("ravi.officer@example.com")).thenReturn(false);
-        when(userRepository.existsByPhone("9876543211")).thenReturn(false);
-        when(passwordEncoder.encode(anyString())).thenReturn("encoded-password");
-        when(userRepository.save(any(Users.class))).thenAnswer(invocation -> {
-            Users user = invocation.getArgument(0);
-            user.setId(33L);
-            return user;
-        });
+        StaffCreateResponse expected = StaffCreateResponse.builder()
+                .userId(33L)
+                .role(Role.AGENT)
+                .code("AG001")
+                .message("AGENT created and credentials sent on email")
+                .build();
 
-        doThrow(new IllegalStateException("smtp failed"))
-                .when(mailService)
-                .sendStaffCredentials(anyString(), anyString(), anyString(), anyString(), anyString());
+        when(staffService.createAgent(request)).thenReturn(expected);
 
-        StaffCreateResponse response = managerService.createOfficer(request);
+        StaffCreateResponse actual = managerService.createAgent(request);
 
-        assertEquals(33L, response.getUserId());
-        assertEquals("OFFICER created, but email delivery failed. Share temp password manually.", response.getMessage());
-        assertTrue(response.getTempPassword().startsWith("OFF001@"));
+        assertEquals(expected.getUserId(), actual.getUserId());
+        assertEquals(expected.getRole(), actual.getRole());
+        assertEquals(expected.getCode(), actual.getCode());
+        assertEquals(expected.getMessage(), actual.getMessage());
+        verify(staffService).createAgent(request);
     }
 }
-
-
