@@ -1,6 +1,7 @@
 package com.microfinance.loan.officer.entity;
 
 import com.microfinance.loan.common.entity.Users;
+import com.microfinance.loan.common.enums.ManagerDecision;
 import com.microfinance.loan.common.enums.LoanStatus;
 import com.microfinance.loan.common.enums.ReviewDecision;
 import com.microfinance.loan.user.entity.LoanApplication;
@@ -72,6 +73,17 @@ public class LoanReview {
     // Remarks
     private String officerRemarks;
 
+    // Manager final-stage review
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "manager_id")
+    private Users manager;
+
+    @Enumerated(EnumType.STRING)
+    private ManagerDecision managerDecision;
+
+    private LocalDateTime managerDecisionTakenAt;
+    private String managerRemarks;
+
     // Review Timeline
     private LocalDateTime reviewStartedAt;
     private LocalDateTime decisionTakenAt;
@@ -93,6 +105,7 @@ public class LoanReview {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         this.decision = ReviewDecision.PENDING;
+        this.managerDecision = ManagerDecision.PENDING;
         this.kycVerified = false;
         this.agentReportReviewed = false;
         this.incomeVerified = false;

@@ -7,6 +7,7 @@ import com.microfinance.loan.user.dto.response.KycStatusResponse;
 import com.microfinance.loan.user.service.UserService;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,6 +28,8 @@ public class UserController {
 		this.userService = userService;
 	}
 
+
+	@PreAuthorize("hasRole('USER') and @userAccessGuard.canAccessUser(#userId, authentication)")
 	@PostMapping(value = "/{userId}/kyc/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ApiResponse<KycStatusResponse.KycDocumentItem> uploadKyc(
 			@PathVariable Long userId,
@@ -43,6 +46,7 @@ public class UserController {
 		return ApiResponse.success("KYC document uploaded successfully", item);
 	}
 
+	@PreAuthorize("hasRole('USER') and @userAccessGuard.canAccessUser(#userId, authentication)")
 	@GetMapping("/{userId}/kyc")
 	public ApiResponse<KycStatusResponse> getKycStatus(@PathVariable Long userId) {
 		return ApiResponse.success("KYC status fetched", userService.getKycStatus(userId));

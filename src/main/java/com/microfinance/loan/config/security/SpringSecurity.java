@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -18,7 +19,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-//@Profile("prod")
+@EnableMethodSecurity
 public class SpringSecurity {
 
     private final UserDetailsServiceImpl userService;
@@ -34,11 +35,12 @@ public class SpringSecurity {
 
 
         return http.authorizeHttpRequests(request -> request
-//                        .requestMatchers(HttpMethod.POST, "/user", "/officer/", "/manager/").permitAll()
-                        .requestMatchers("/api/public/**", "/api/health-check").permitAll()
-                        .requestMatchers("/api/officer/**", "/api/user/**", "/api/agent/**").authenticated()
+                        .requestMatchers("/api/auth/**", "/api/health-check").permitAll()
+                        .requestMatchers("/api/users/**").hasRole("USER")
+                        .requestMatchers("/api/agents/**").hasRole("AGENT")
+                        .requestMatchers("/api/officers/**").hasRole("OFFICER")
                         .requestMatchers("/api/manager/**").hasRole("MANAGER")
-                        .anyRequest().permitAll())
+                        .anyRequest().authenticated())
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

@@ -2,6 +2,7 @@ package com.microfinance.loan.agent.entity;
 
 
 import com.microfinance.loan.common.entity.Users;
+import com.microfinance.loan.common.enums.AgentAvailability;
 import com.microfinance.loan.common.enums.AgentStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -42,6 +43,10 @@ public class AgentProfile {
     @Column(nullable = false)
     private AgentStatus agentStatus;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AgentAvailability  agentAvailability;
+
     private Integer totalVerifications;
     private Integer completedVerifications;
     private Integer pendingVerifications;
@@ -61,6 +66,9 @@ public class AgentProfile {
         this.updatedAt = LocalDateTime.now();
         if (this.agentStatus == null) {
             this.agentStatus = AgentStatus.UNDER_REVIEW;
+        }
+        if(this.agentAvailability == null) {
+            this.agentAvailability = AgentAvailability.AVAILABLE;
         }
         this.totalVerifications = 0;
         this.completedVerifications = 0;

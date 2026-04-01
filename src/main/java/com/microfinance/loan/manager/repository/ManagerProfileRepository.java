@@ -9,7 +9,5 @@ import java.util.Optional;
 @Repository
 public interface ManagerProfileRepository extends JpaRepository<ManagerProfile, Long> {
     Optional<ManagerProfile> findByManagerCode(String managerCode);
-
-    boolean existsByManagerCode(String managerCode);
 }
 

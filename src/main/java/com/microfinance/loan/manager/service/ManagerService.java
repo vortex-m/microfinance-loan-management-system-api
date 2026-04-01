@@ -10,20 +10,20 @@ import com.microfinance.loan.common.repository.UserRepository;
 import com.microfinance.loan.common.service.MailService;
 import com.microfinance.loan.manager.dto.request.CreateStaffRequest;
 import com.microfinance.loan.manager.dto.response.StaffCreateResponse;
+import com.microfinance.loan.manager.support.GeneratePass;
+import com.microfinance.loan.manager.support.StaffRequestValidator;
 import com.microfinance.loan.officer.entity.OfficerProfile;
 import com.microfinance.loan.officer.repository.OfficerProfileRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.security.SecureRandom;
 
 @Service
 public class ManagerService {
 
-	private static final SecureRandom RANDOM = new SecureRandom();
-
+	private final StaffRequestValidator validator;
+	private final GeneratePass  generatePass;
 	private final UserRepository userRepository;
 	private final AgentProfileRepository agentProfileRepository;
 	private final OfficerProfileRepository officerProfileRepository;
@@ -34,17 +34,21 @@ public class ManagerService {
 						  AgentProfileRepository agentProfileRepository,
 						  OfficerProfileRepository officerProfileRepository,
 						  PasswordEncoder passwordEncoder,
-						  MailService mailService) {
+						  MailService mailService,
+						  StaffRequestValidator validator,
+						  GeneratePass generatePass) {
 		this.userRepository = userRepository;
 		this.agentProfileRepository = agentProfileRepository;
 		this.officerProfileRepository = officerProfileRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.mailService = mailService;
+		this.validator = validator;
+		this.generatePass = generatePass;
 	}
 
 	@Transactional
 	public StaffCreateResponse createAgent(CreateStaffRequest request) {
-		validateCommonFields(request);
+		validator.validateCommonField(request);
 		if (request.getRole() != Role.AGENT) {
 			throw new IllegalArgumentException("Role must be AGENT for this endpoint");
 		}
@@ -54,7 +58,7 @@ public class ManagerService {
 		}
 
 		Users user = createBaseUser(request, Role.AGENT);
-		String tempPassword = generatePasswordFromCode(request.getCode());
+		String tempPassword = generatePass.generatePassFromCode(request.getCode());
 		user.setPassword(passwordEncoder.encode(tempPassword));
 		Users savedUser = userRepository.save(user);
 
@@ -81,7 +85,7 @@ public class ManagerService {
 
 	@Transactional
 	public StaffCreateResponse createOfficer(CreateStaffRequest request) {
-		validateCommonFields(request);
+		validator.validateCommonField(request);
 		if (request.getRole() != Role.OFFICER) {
 			throw new IllegalArgumentException("Role must be OFFICER for this endpoint");
 		}
@@ -91,7 +95,7 @@ public class ManagerService {
 		}
 
 		Users user = createBaseUser(request, Role.OFFICER);
-		String tempPassword = generatePasswordFromCode(request.getCode());
+		String tempPassword = generatePass.generatePassFromCode(request.getCode());
 		user.setPassword(passwordEncoder.encode(tempPassword));
 		Users savedUser = userRepository.save(user);
 
@@ -132,26 +136,6 @@ public class ManagerService {
 				.address(request.getAddress())
 				.role(role)
 				.build();
-	}
-
-	private void validateCommonFields(CreateStaffRequest request) {
-		if (request.getRole() == null) {
-			throw new IllegalArgumentException("Role is required");
-		}
-		if (!StringUtils.hasText(request.getCode())) {
-			throw new IllegalArgumentException("Code is required");
-		}
-		if (!StringUtils.hasText(request.getName())) {
-			throw new IllegalArgumentException("Name is required");
-		}
-		if (!StringUtils.hasText(request.getEmail())) {
-			throw new IllegalArgumentException("Email is required");
-		}
-	}
-
-	private String generatePasswordFromCode(String code) {
-		int suffix = 1000 + RANDOM.nextInt(9000);
-		return code.trim() + "@" + suffix;
 	}
 
 	private StaffCreateResponse buildResponse(Users user, Role role, String code, String tempPassword, String message) {

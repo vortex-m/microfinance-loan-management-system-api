@@ -35,10 +35,25 @@ public class Loan {
     @JoinColumn(name = "user_id", nullable = false)
     private Users user;
 
-    // Officer who approved
+    // Backward-compatible final approver field.
+    // Use managerApprovedBy for explicit two-step flow.
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "approved_by", nullable = false)
+    @JoinColumn(name = "approved_by")
     private Users approvedBy;
+
+    // Two-step approval metadata
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "officer_approved_by")
+    private Users officerApprovedBy;
+
+    private LocalDateTime officerApprovedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "manager_approved_by")
+    private Users managerApprovedBy;
+
+    private LocalDateTime managerApprovedAt;
+    private String managerRejectionReason;
 
     // Agent who verified
     @ManyToOne(fetch = FetchType.LAZY)
@@ -123,7 +138,7 @@ public class Loan {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
-        this.loanStatus = LoanStatus.APPROVED;
+        this.loanStatus = LoanStatus.PENDING_MANAGER_APPROVAL;
         this.emisPaid = 0;
         this.emisOverdue = 0;
         this.totalPaidAmount = 0.0;
