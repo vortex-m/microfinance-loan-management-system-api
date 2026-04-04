@@ -36,4 +36,4 @@ src/main/resources/application-prod.yml
 ### VS Code ###
 .vscode/
 
-/upload
+upload/
