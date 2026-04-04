@@ -28,6 +28,8 @@ public class UserProfile {
 
     private String fatherName;
     private String motherName;
+    private String wifeName;
+    private String husbandName;
 
     private LocalDate dateOfBirth;
 
@@ -37,9 +39,6 @@ public class UserProfile {
 
 
     private Double monthlyIncome;
-    private String bankAccountNumber;
-    private String bankName;
-    private String ifscCode;
 
 
     @Column(unique = true)
@@ -52,15 +51,18 @@ public class UserProfile {
     @Column(nullable = false)
     private KycStatus kycStatus;
 
+//    @Column(nullable = false)
+//    private Boolean kycApproved;
+
 
     private String street;
     private String city;
     private String state;
-    private String pincode;
+    private String pinCode;
 
     // AI Score
-    private Double creditScore; // 400 to 900
-    private Double riskScore;   // 0.0 - 1.0
+    private Double creditScore;
+    private Double riskScore;
     private LocalDateTime scoreUpdatedAt;
 
     @Column(updatable = false)
@@ -72,6 +74,9 @@ public class UserProfile {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         this.kycStatus = KycStatus.PENDING;
+//        if (this.kycApproved == null) {
+//            this.kycApproved = false;
+//        }
     }
 
     @PreUpdate

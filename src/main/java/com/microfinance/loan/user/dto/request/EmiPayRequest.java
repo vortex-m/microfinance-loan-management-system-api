@@ -21,17 +21,10 @@ public class EmiPayRequest {
     private Double paymentAmount;
 
     @NotBlank(message = "Payment mode is required")
-    private String paymentMode;         // UPI, NETBANKING, CASH, CHEQUE
-
-    // UPI specific
-    private String upiId;
-    private String upiTransactionRef;
-
-    // Cheque specific
-    private String chequeNumber;
-    private String chequeBankName;
-    private String chequeDate;
+    private String paymentMode;         // CASH, BANK_TRANSFER
 
     // Gateway info (filled after gateway response)
     private String gatewayOrderId;
+
+    private String paymentReference;
 }

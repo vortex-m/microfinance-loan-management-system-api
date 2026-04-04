@@ -32,6 +32,8 @@ public class PaymentHistoryResponse {
         private String paymentMode;
         private PaymentStatus paymentStatus;
         private String gatewayTransactionId;
+        private String paymentReference;
+        private LocalDateTime cashVerifiedAt;
         private LocalDateTime paidAt;
         private String receiptNumber;
     }

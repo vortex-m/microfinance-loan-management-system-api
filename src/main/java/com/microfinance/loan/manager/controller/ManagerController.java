@@ -22,14 +22,14 @@ public class ManagerController {
 	}
 
 	@PreAuthorize("hasRole('MANAGER')")
-	@PostMapping("/staff/agent")
+	@PostMapping("/staff/create/agent")
 	public ApiResponse<StaffCreateResponse> createAgent(@Valid @RequestBody CreateStaffRequest request) {
 		StaffCreateResponse response = managerService.createAgent(request);
 		return ApiResponse.success("Agent created successfully", response);
 	}
 
 	@PreAuthorize("hasRole('MANAGER')")
-	@PostMapping("/staff/officer")
+	@PostMapping("/staff/create/officer")
 	public ApiResponse<StaffCreateResponse> createOfficer(@Valid @RequestBody CreateStaffRequest request) {
 		StaffCreateResponse response = managerService.createOfficer(request);
 		return ApiResponse.success("Officer created successfully", response);

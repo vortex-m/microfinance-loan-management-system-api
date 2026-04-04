@@ -34,6 +34,23 @@ public class OfficerProfile {
     private String branch;
     private String branchCode;
 
+    private String fatherName;
+    private String motherName;
+    private LocalDate dateOfBirth;
+    private String gender;
+    private String maritalStatus;
+
+    @Column(unique = true)
+    private String aadhaarNumber;
+
+    @Column(unique = true)
+    private String panNumber;
+
+    private String street;
+    private String city;
+    private String state;
+    private String pincode;
+
 
     private LocalDate joiningDate;
     private String employeeId;

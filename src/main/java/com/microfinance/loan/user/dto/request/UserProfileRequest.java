@@ -23,7 +23,7 @@ public class UserProfileRequest {
     private LocalDate dateOfBirth;
 
     @NotBlank(message = "Gender is required")
-    private String gender;              // MALE, FEMALE, OTHER
+    private String gender;
 
     @NotBlank(message = "Occupation is required")
     private String occupation;          // SALARIED, SELF_EMPLOYED, FARMER
@@ -35,16 +35,6 @@ public class UserProfileRequest {
     @Min(value = 1, message = "Monthly income must be greater than 0")
     private Double monthlyIncome;
 
-    @NotBlank(message = "Bank account number is required")
-    private String bankAccountNumber;
-
-    @NotBlank(message = "Bank name is required")
-    private String bankName;
-
-    @NotBlank(message = "IFSC code is required")
-    @Pattern(regexp = "^[A-Z]{4}0[A-Z0-9]{6}$",
-            message = "Invalid IFSC code format")
-    private String ifscCode;
 
     // KYC
     @NotBlank(message = "Aadhaar number is required")

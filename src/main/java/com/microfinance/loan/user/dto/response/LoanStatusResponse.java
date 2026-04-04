@@ -1,5 +1,6 @@
 package com.microfinance.loan.user.dto.response;
 
+import com.microfinance.loan.common.enums.DisbursalMode;
 import com.microfinance.loan.common.enums.LoanStatus;
 import lombok.*;
 
@@ -26,6 +27,7 @@ public class LoanStatusResponse {
         private Double requestedAmount;
         private Integer tenureMonths;
         private String loanPurpose;
+        private DisbursalMode disbursalMode;
         private LoanStatus status;
         private String rejectionReason;
         private LocalDateTime appliedAt;

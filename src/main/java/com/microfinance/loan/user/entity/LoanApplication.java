@@ -1,6 +1,7 @@
 package com.microfinance.loan.user.entity;
 
 import com.microfinance.loan.common.entity.Users;
+import com.microfinance.loan.common.enums.DisbursalMode;
 import com.microfinance.loan.common.enums.LoanStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -21,7 +22,7 @@ public class LoanApplication {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String applicationNumber;   // LOAN-2024-00123
+    private String applicationNumber;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -32,16 +33,29 @@ public class LoanApplication {
     private Double requestedAmount;
 
     @Column(nullable = false)
-    private Integer tenureMonths;       // 6, 12, 24, 36 months
+    private Integer tenureMonths;
+
+
 
     @Column(nullable = false)
-    private String loanPurpose;         // BUSINESS, EDUCATION, MEDICAL, HOME etc.
+    private String loanPurpose;
 
     private String loanPurposeDescription;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private DisbursalMode disbursalMode;
+
+    // Bank details are captured per loan when BANK_TRANSFER is chosen.
+    private String disbursalBankName;
+    private String disbursalBankAccount;
+    private String disbursalIfscCode;
+    private String disbursalBankProofUrl;
+    private String disbursalBankProofFileName;
+
     // Approved Details (filled after approval)
     private Double approvedAmount;
-    private Double interestRate;        // annual %
+    private Double interestRate;
     private Double processingFee;
     private Double emiAmount;
 
@@ -58,6 +72,17 @@ public class LoanApplication {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_officer_id")
     private Users assignedOfficer;
+
+    // Cash handover OTP for CASH disbursal mode.
+    private String cashDisbursalOtpHash;
+
+    @Enumerated(EnumType.STRING)
+    private com.microfinance.loan.common.enums.CashOtpStatus cashDisbursalOtpStatus;
+
+    private Integer cashDisbursalOtpAttempts;
+    private LocalDateTime cashDisbursalOtpRequestedAt;
+    private LocalDateTime cashDisbursalOtpExpiresAt;
+    private LocalDateTime cashDisbursalOtpVerifiedAt;
 
     // Remarks
     private String userRemarks;
@@ -80,6 +105,12 @@ public class LoanApplication {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         this.status = LoanStatus.PENDING;
+        if (this.disbursalMode == null) {
+            this.disbursalMode = DisbursalMode.BANK_TRANSFER;
+        }
+        if (this.cashDisbursalOtpAttempts == null) {
+            this.cashDisbursalOtpAttempts = 0;
+        }
     }
 
     @PreUpdate

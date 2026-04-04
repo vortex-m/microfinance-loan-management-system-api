@@ -22,10 +22,14 @@ public class UserProfileResponse {
     private String phone;
     private Role role;
     private UserStatus status;
+    private Boolean isHome;
 
     // From UserProfile entity
     private String fatherName;
     private String motherName;
+    private String wifeName;
+    private String husbandName;
+
     private LocalDate dateOfBirth;
     private String gender;
     private String occupation;
@@ -39,12 +43,13 @@ public class UserProfileResponse {
     private String aadhaarNumber;
     private String panNumber;
     private KycStatus kycStatus;
+//    private Boolean kycApproved;
 
     // Address
     private String street;
     private String city;
     private String state;
-    private String pincode;
+    private String pinCode;
 
     // AI Scores
     private Double creditScore;

@@ -1,5 +1,6 @@
 package com.microfinance.loan.payment.entity;
 
+import com.microfinance.loan.agent.entity.CashCollectionOtp;
 import com.microfinance.loan.common.entity.Users;
 import com.microfinance.loan.common.enums.PaymentStatus;
 import com.microfinance.loan.loan.entity.Loan;
@@ -50,8 +51,7 @@ public class Payment {
 
     // Payment Mode
     @Column(nullable = false)
-    private String paymentMode;             // UPI, NETBANKING, CASH,
-    // CHEQUE, NEFT, RTGS
+    private String paymentMode;             // CASH, BANK_TRANSFER
 
     // Gateway Info
     private String gatewayName;             // RAZORPAY, PAYTM, CASHFREE
@@ -60,14 +60,8 @@ public class Payment {
     private String gatewayResponse;         // full JSON response
     private String gatewayStatus;           // SUCCESS, FAILED, PENDING
 
-    // UPI specific
-    private String upiId;
-    private String upiTransactionRef;
-
-    // Cheque specific
-    private String chequeNumber;
-    private String chequeBankName;
-    private String chequeDate;
+    // Optional reference for manual/bank transfer confirmation.
+    private String paymentReference;
 
     // Payment Status
     @Enumerated(EnumType.STRING)
@@ -84,8 +78,12 @@ public class Payment {
 
     // Verified by (for cash payments)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "verified_by")
-    private Users verifiedBy;               // officer who verified cash
+    @JoinColumn(name = "verified_by_agent_id")
+    private Users verifiedBy;               // agent who verified cash collection
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cash_otp_id")
+    private CashCollectionOtp cashCollectionOtp;
 
     private LocalDateTime verifiedAt;
 

@@ -26,5 +26,14 @@ public class StaffRequestValidator {
         if(!StringUtils.hasText(request.getPhone())){
             throw new IllegalArgumentException("Phone is required.");
         }
+        if(!StringUtils.hasText(request.getDesignation())){
+            throw new IllegalArgumentException("Designation is required.");
+        }
+        if(!StringUtils.hasText(request.getDepartment())){
+            throw new IllegalArgumentException("Department is required.");
+        }
+        if(!StringUtils.hasText(request.getBranchCode())){
+            throw new IllegalArgumentException("Branch code is required.");
+        }
     }
 }

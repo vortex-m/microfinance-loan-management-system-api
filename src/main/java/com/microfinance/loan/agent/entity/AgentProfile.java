@@ -6,6 +6,7 @@ import com.microfinance.loan.common.enums.AgentAvailability;
 import com.microfinance.loan.common.enums.AgentStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -30,6 +31,25 @@ public class AgentProfile {
 
     private String designation;
     private String department;
+    private String branch;
+    private String branchCode;
+
+    private String fatherName;
+    private String motherName;
+    private LocalDate dateOfBirth;
+    private String gender;
+    private String maritalStatus;
+
+    @Column(unique = true)
+    private String aadhaarNumber;
+
+    @Column(unique = true)
+    private String panNumber;
+
+    private String street;
+    private String city;
+    private String state;
+    private String pincode;
 
     private String assignedCity;
     private String assignedState;

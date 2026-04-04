@@ -1,7 +1,7 @@
 package com.microfinance.loan.user.entity;
 
 import com.microfinance.loan.common.entity.Users;
-import com.microfinance.loan.common.enums.FileType;
+import com.microfinance.loan.common.enums.KycDocumentType;
 import com.microfinance.loan.common.enums.KycStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -28,7 +28,7 @@ public class KycDocument {
     //Doc Info
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private FileType fileType;
+    private KycDocumentType documentType;
 
     @Column(nullable = false)
     private String documentNumber;

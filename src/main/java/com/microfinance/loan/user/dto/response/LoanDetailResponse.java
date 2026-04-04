@@ -1,5 +1,6 @@
 package com.microfinance.loan.user.dto.response;
 
+import com.microfinance.loan.common.enums.DisbursalMode;
 import com.microfinance.loan.common.enums.LoanStatus;
 import lombok.*;
 
@@ -24,6 +25,10 @@ public class LoanDetailResponse {
     private String loanPurpose;
     private String loanPurposeDescription;
     private String userRemarks;
+    private DisbursalMode disbursalMode;
+    private String disbursalBankName;
+    private String disbursalBankAccount;
+    private String disbursalIfscCode;
 
     // Approved details (null if not yet approved)
     private String loanNumber;

@@ -1,6 +1,6 @@
 package com.microfinance.loan.user.dto.response;
 
-import com.microfinance.loan.common.enums.FileType;
+import com.microfinance.loan.common.enums.KycDocumentType;
 import com.microfinance.loan.common.enums.KycStatus;
 import lombok.*;
 
@@ -25,7 +25,7 @@ public class KycStatusResponse {
     @Builder
     public static class KycDocumentItem {
         private Long documentId;
-        private FileType documentType;
+        private KycDocumentType documentType;
         private String documentNumber;
         private String fileUrl;
         private String fileName;

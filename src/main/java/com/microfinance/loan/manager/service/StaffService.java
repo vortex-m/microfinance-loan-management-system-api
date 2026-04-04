@@ -52,34 +52,35 @@ public class StaffService {
             throw new IllegalArgumentException("Role must be AGENT for this endpoint");
         }
 
-        if (agentProfileRepository.existsByAgentCode(request.getCode())) {
-            throw new IllegalArgumentException("Agent code already exists: " + request.getCode());
+        String normalizedCode = request.getCode().trim().toUpperCase();
+        if (agentProfileRepository.existsByAgentCode(normalizedCode)) {
+            throw new IllegalArgumentException("Agent code already exists: " + normalizedCode);
         }
 
         Users user = createBaseUser(request, Role.AGENT);
-        String tempPassword = generatePass.generatePassFromCode(request.getCode());
+        String tempPassword = generatePass.generatePassFromCode(normalizedCode);
         user.setPassword(passwordEncoder.encode(tempPassword));
         Users savedUser = userRepository.save(user);
 
         AgentProfile profile = AgentProfile.builder()
                 .users(savedUser)
-                .agentCode(request.getCode().trim())
-                .designation(request.getDesignation())
-                .department(request.getDepartment())
-                .assignedCity(request.getBranch())
-                .assignedState(request.getBranchCode())
+                .agentCode(normalizedCode)
+                .designation(request.getDesignation().trim())
+                .department(request.getDepartment().trim())
+                .branch(request.getBranch().trim())
+                .branchCode(request.getBranchCode().trim().toUpperCase())
                 .agentStatus(AgentStatus.ACTIVE)
                 .build();
         agentProfileRepository.save(profile);
 
         String message = "AGENT created and credentials sent on email";
         try {
-            mailService.sendStaffCredentials(savedUser.getEmail(), savedUser.getName(), "AGENT", request.getCode(), tempPassword);
+            mailService.sendStaffCredentials(savedUser.getEmail(), savedUser.getName(), "AGENT", normalizedCode, tempPassword);
         } catch (IllegalStateException ex) {
             message = "AGENT created, but email delivery failed. Share temp password manually.";
         }
 
-        return buildResponse(savedUser, Role.AGENT, request.getCode(), tempPassword, message);
+        return buildResponse(savedUser, Role.AGENT, normalizedCode, tempPassword, message);
     }
 
     @Transactional
@@ -89,34 +90,35 @@ public class StaffService {
             throw new IllegalArgumentException("Role must be OFFICER for this endpoint");
         }
 
-        if (officerProfileRepository.existsByOfficerCode(request.getCode())) {
-            throw new IllegalArgumentException("Officer code already exists: " + request.getCode());
+        String normalizedCode = request.getCode().trim().toUpperCase();
+        if (officerProfileRepository.existsByOfficerCode(normalizedCode)) {
+            throw new IllegalArgumentException("Officer code already exists: " + normalizedCode);
         }
 
         Users user = createBaseUser(request, Role.OFFICER);
-        String tempPassword = generatePass.generatePassFromCode(request.getCode());
+        String tempPassword = generatePass.generatePassFromCode(normalizedCode);
         user.setPassword(passwordEncoder.encode(tempPassword));
         Users savedUser = userRepository.save(user);
 
         OfficerProfile profile = OfficerProfile.builder()
                 .users(savedUser)
-                .officerCode(request.getCode().trim())
-                .designation(request.getDesignation())
-                .department(request.getDepartment())
-                .branch(request.getBranch())
-                .branchCode(request.getBranchCode())
+                .officerCode(normalizedCode)
+                .designation(request.getDesignation().trim())
+                .department(request.getDepartment().trim())
+                .branch(request.getBranch().trim())
+                .branchCode(request.getBranchCode().trim().toUpperCase())
                 .officerStatus(OfficerStatus.ACTIVE)
                 .build();
         officerProfileRepository.save(profile);
 
         String message = "OFFICER created and credentials sent on email";
         try {
-            mailService.sendStaffCredentials(savedUser.getEmail(), savedUser.getName(), "OFFICER", request.getCode(), tempPassword);
+            mailService.sendStaffCredentials(savedUser.getEmail(), savedUser.getName(), "OFFICER", normalizedCode, tempPassword);
         } catch (IllegalStateException ex) {
             message = "OFFICER created, but email delivery failed. Share temp password manually.";
         }
 
-        return buildResponse(savedUser, Role.OFFICER, request.getCode(), tempPassword, message);
+        return buildResponse(savedUser, Role.OFFICER, normalizedCode, tempPassword, message);
     }
 
     private Users createBaseUser(CreateStaffRequest request, Role role) {
@@ -143,7 +145,7 @@ public class StaffService {
                 .role(role)
                 .code(code)
                 .email(user.getEmail())
-                .isHome(user.getIsHome() != null ? user.getIsHome() : false)
+                .isHome(Boolean.TRUE.equals(user.getIsHome()))
                 .tempPassword(tempPassword)
                 .message(message)
                 .build();

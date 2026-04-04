@@ -1,6 +1,7 @@
 package com.microfinance.loan.loan.entity;
 
 import com.microfinance.loan.common.entity.Users;
+import com.microfinance.loan.common.enums.DisbursalMode;
 import com.microfinance.loan.common.enums.LoanStatus;
 import com.microfinance.loan.user.entity.LoanApplication;
 import jakarta.persistence.*;
@@ -83,6 +84,10 @@ public class Loan {
     // Loan Purpose
     private String loanPurpose;             // BUSINESS, EDUCATION, MEDICAL etc.
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private DisbursalMode disbursalMode;
+
     // Status
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -121,6 +126,12 @@ public class Loan {
     private String disbursalTransactionRef; // bank transaction reference
     private LocalDateTime disbursedAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cash_handover_agent_id")
+    private Users cashHandoverAgent;
+
+    private LocalDateTime cashHandedOverAt;
+
     // Closure Info
     private String closureType;             // COMPLETED, FORECLOSED, WRITTEN_OFF
     private LocalDateTime closedAt;
@@ -146,6 +157,9 @@ public class Loan {
         this.totalPenaltyPaid = 0.0;
         this.isNpa = false;
         this.isFraudFlagged = false;
+        if (this.disbursalMode == null) {
+            this.disbursalMode = DisbursalMode.BANK_TRANSFER;
+        }
     }
 
     @PreUpdate

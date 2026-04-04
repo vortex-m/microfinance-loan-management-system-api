@@ -46,6 +46,16 @@ public class MailService {
         sendPlainText(toEmail, subject, body);
     }
 
+    public void sendCashDisbursalOtp(String toEmail, String fullName, String otp, String applicationNumber) {
+        String subject = "Cash disbursal OTP for loan " + applicationNumber;
+        String body = "Hello " + fullName + ",\n\n"
+                + "Your cash disbursal OTP is: " + otp + "\n"
+                + "Loan Application: " + applicationNumber + "\n"
+                + "This OTP is valid for 10 minutes and should be shared only with assigned agent at handover.\n\n"
+                + "- Loan Management System";
+        sendPlainText(toEmail, subject, body);
+    }
+
     private void sendPlainText(String toEmail, String subject, String body) {
         if (mailSender == null) {
             log.warn("JavaMailSender not configured. Skipping email to {} with subject '{}'.", toEmail, subject);
@@ -68,5 +78,3 @@ public class MailService {
         }
     }
 }
-
-

@@ -1,6 +1,7 @@
 package com.microfinance.loan.agent.entity;
 
 import com.microfinance.loan.common.entity.Users;
+import com.microfinance.loan.common.enums.AgentTaskType;
 import com.microfinance.loan.common.enums.TaskStatus;
 import com.microfinance.loan.user.entity.LoanApplication;
 import jakarta.persistence.*;
@@ -43,6 +44,10 @@ public class AgentTask {
     @Column(nullable = false)
     private TaskStatus taskStatus;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AgentTaskType taskType;
+
     // Task Details
     private String taskDescription;
     private String priorityLevel;
@@ -52,6 +57,11 @@ public class AgentTask {
     private LocalDateTime acceptedAt;
     private LocalDateTime startedAt;
     private LocalDateTime completedAt;
+
+    private Boolean otpRequired;
+    private Boolean otpVerified;
+    private LocalDateTime otpRequestedAt;
+    private LocalDateTime otpVerifiedAt;
 
     // Decline Info
     private String declineReason;
@@ -65,6 +75,15 @@ public class AgentTask {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         this.taskStatus = TaskStatus.ASSIGNED;
+        if (this.taskType == null) {
+            this.taskType = AgentTaskType.VERIFICATION;
+        }
+        if (this.otpRequired == null) {
+            this.otpRequired = false;
+        }
+        if (this.otpVerified == null) {
+            this.otpVerified = false;
+        }
     }
 
     @PreUpdate

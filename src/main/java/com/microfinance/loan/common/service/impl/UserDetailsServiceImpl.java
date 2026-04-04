@@ -8,6 +8,7 @@ import com.microfinance.loan.manager.repository.ManagerProfileRepository;
 import com.microfinance.loan.officer.repository.OfficerProfileRepository;
 import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -30,6 +31,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String loginId) throws UsernameNotFoundException {
 
         Users users = resolveUser(loginId)
@@ -53,22 +55,22 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             return byEmail;
         }
 
-        Optional<Users> byManagerCode = managerProfileRepository.findByManagerCode(normalized)
-                .map(profile -> profile.getUsers())
+        Optional<Users> byManagerCode = managerProfileRepository.findByManagerCodeWithUsers(normalized)
+                .map(com.microfinance.loan.manager.entity.ManagerProfile::getUsers)
                 .filter(user -> user.getRole() == Role.MANAGER);
         if (byManagerCode.isPresent()) {
             return byManagerCode;
         }
 
-        Optional<Users> byAgentCode = agentProfileRepository.findByAgentCode(normalized)
-                .map(profile -> profile.getUsers())
+        Optional<Users> byAgentCode = agentProfileRepository.findByAgentCodeWithUsers(normalized)
+                .map(com.microfinance.loan.agent.entity.AgentProfile::getUsers)
                 .filter(user -> user.getRole() == Role.AGENT);
         if (byAgentCode.isPresent()) {
             return byAgentCode;
         }
 
-        return officerProfileRepository.findByOfficerCode(normalized)
-                .map(profile -> profile.getUsers())
+        return officerProfileRepository.findByOfficerCodeWithUsers(normalized)
+                .map(com.microfinance.loan.officer.entity.OfficerProfile::getUsers)
                 .filter(user -> user.getRole() == Role.OFFICER);
     }
 }
