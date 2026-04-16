@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface CashCollectionOtpRepository extends JpaRepository<CashCollectionOtp, Long> {
+    Optional<CashCollectionOtp> findByIdAndAgentId(Long id, Long agentId);
+
     Optional<CashCollectionOtp> findTopByLoanIdAndEmiScheduleIdAndOtpStatusOrderByCreatedAtDesc(
             Long loanId,
             Long emiScheduleId,

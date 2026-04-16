@@ -41,6 +41,26 @@ public class BranchService {
         return toResponse(branchProfileRepository.save(profile));
     }
 
+    @Transactional
+    public BranchResponse update(String branchCode, BranchUpsertRequest request) {
+        String normalizedBranchCode = normalizeCode(branchCode);
+        BranchProfile profile = branchProfileRepository.findByBranchCodeIgnoreCase(normalizedBranchCode)
+                .orElseThrow(() -> new IllegalArgumentException("Branch not found: " + normalizedBranchCode));
+
+        profile.setBranchName(request.getBranchName().trim());
+        profile.setRegionCode(normalizeCode(request.getRegionCode()));
+        profile.setRegionName(request.getRegionName().trim());
+        profile.setCity(trimOrNull(request.getCity()));
+        profile.setState(trimOrNull(request.getState()));
+        profile.setAddress(trimOrNull(request.getAddress()));
+        profile.setPincode(trimOrNull(request.getPincode()));
+        if (request.getActive() != null) {
+            profile.setActive(request.getActive());
+        }
+
+        return toResponse(branchProfileRepository.save(profile));
+    }
+
     @Transactional(readOnly = true)
     public List<BranchResponse> getAll() {
         return branchProfileRepository.findAll().stream().map(this::toResponse).toList();
@@ -76,4 +96,5 @@ public class BranchService {
                 .build();
     }
 }
+
 

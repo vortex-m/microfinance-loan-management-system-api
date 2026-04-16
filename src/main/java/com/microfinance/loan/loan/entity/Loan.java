@@ -24,7 +24,7 @@ public class Loan {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String loanNumber;              // e.g. LN-2024-00123
+    private String loanNumber;
 
     // Linked to original application
     @OneToOne(fetch = FetchType.LAZY)
@@ -63,26 +63,26 @@ public class Loan {
 
     // Loan Financial Details
     @Column(nullable = false)
-    private Double principalAmount;         // approved loan amount
+    private Double principalAmount;
 
     @Column(nullable = false)
-    private Double interestRate;            // annual interest rate %
+    private Double interestRate;
 
     @Column(nullable = false)
-    private String interestType;            // FLAT, REDUCING_BALANCE
+    private String interestType;
 
     @Column(nullable = false)
-    private Integer tenureMonths;           // total EMIs
+    private Integer tenureMonths;
 
     @Column(nullable = false)
-    private Double emiAmount;              // monthly EMI
+    private Double emiAmount;
 
     private Double processingFee;
     private Double totalInterestPayable;
-    private Double totalAmountPayable;      // principal + interest
+    private Double totalAmountPayable;
 
     // Loan Purpose
-    private String loanPurpose;             // BUSINESS, EDUCATION, MEDICAL etc.
+    private String loanPurpose;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -95,7 +95,7 @@ public class Loan {
 
     // EMI Tracking
     @Column(nullable = false)
-    private Integer totalEmis;              // same as tenureMonths
+    private Integer totalEmis;
     private Integer emisPaid;
     private Integer emisPending;
     private Integer emisOverdue;
@@ -115,15 +115,15 @@ public class Loan {
     private LocalDate firstEmiDate;
 
     @Column(nullable = false)
-    private LocalDate lastEmiDate;          // expected closure date
+    private LocalDate lastEmiDate;
 
-    private LocalDate actualClosureDate;    // filled when CLOSED
+    private LocalDate actualClosureDate;    // when loan CLOSED
 
     // Disbursal Info
-    private String disbursalBankAccount;    // user's bank account
+    private String disbursalBankAccount;
     private String disbursalBankName;
     private String disbursalIfscCode;
-    private String disbursalTransactionRef; // bank transaction reference
+    private String disbursalTransactionRef;
     private LocalDateTime disbursedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -133,11 +133,11 @@ public class Loan {
     private LocalDateTime cashHandedOverAt;
 
     // Closure Info
-    private String closureType;             // COMPLETED, FORECLOSED, WRITTEN_OFF
+    private String closureType;
     private LocalDateTime closedAt;
 
     // Flags
-    private Boolean isNpa;                  // Non Performing Asset
+    private Boolean isNpa;
     private Boolean isFraudFlagged;
     private LocalDateTime npaSince;
 

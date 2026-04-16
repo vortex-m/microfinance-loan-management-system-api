@@ -60,6 +60,8 @@ public class UserKycService {
 
 		String fileUrl = fileStorageService.storeFile(file, "kyc/" + userId + "/" + request.getDocumentType().name().toLowerCase());
 
+		String  normalizedDocNumber = normalizeDocumentNumber(request.getDocumentType(), request.getDocumentNumber());
+
 		KycDocument document = KycDocument.builder()
 				.user(user)
 				.documentType(request.getDocumentType())
@@ -71,9 +73,12 @@ public class UserKycService {
 				.version(nextVersion)
 				.isActive(true)
 				.verificationStatus(KycStatus.PENDING)
+				.documentNumber(normalizedDocNumber)
 				.build();
 
 		KycDocument saved = kycDocumentRepository.save(document);
+
+		syncProfileDocNumber(profile, request.getDocumentType(), normalizedDocNumber);
 
 		// Any re-upload requires re-validation by officer.
 		profile.setKycStatus(KycStatus.PENDING);
@@ -113,6 +118,30 @@ public class UserKycService {
 				.overallKycStatus(profile.getKycStatus())
 				.documents(documents)
 				.build();
+	}
+
+	private void syncProfileDocNumber(UserProfile profile, KycDocumentType documentType, String documentNumber) {
+		if(documentNumber == null) return;
+		String normalized = normalizeDocumentNumber(documentType, documentNumber);
+
+		if(documentType == KycDocumentType.AADHAAR){
+			profile.setAadhaarNumber(normalized);
+		}else if(documentType == KycDocumentType.PAN){
+			profile.setPanNumber(normalized);
+		}
+	}
+
+	private String normalizeDocumentNumber(KycDocumentType documentType, String value) {
+        String cleaned = value == null ? null : value.trim();
+        if(cleaned == null) return null;
+
+        if(documentType == KycDocumentType.AADHAAR){
+            return cleaned.replaceAll("\\s+", "");
+        }
+        if(documentType == KycDocumentType.PAN){
+            return cleaned.replaceAll("\\s+", "").toUpperCase();
+        }
+        return cleaned;
 	}
 
 	private KycStatusResponse.KycDocumentItem mapToItem(KycDocument document) {

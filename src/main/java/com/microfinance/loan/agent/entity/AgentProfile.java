@@ -1,6 +1,7 @@
 package com.microfinance.loan.agent.entity;
 
 
+import com.microfinance.loan.branch.entity.BranchProfile;
 import com.microfinance.loan.common.entity.Users;
 import com.microfinance.loan.common.enums.AgentAvailability;
 import com.microfinance.loan.common.enums.AgentStatus;
@@ -25,6 +26,10 @@ public class AgentProfile {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private Users users;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "branch_id")
+    private BranchProfile branchProfile;
 
     @Column(nullable = false, unique = true)
     private String agentCode;

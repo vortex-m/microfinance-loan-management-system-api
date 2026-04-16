@@ -105,6 +105,15 @@ public class AdminService {
                                                 AdminProfileUpsertRequest request) {
         Users adminUser = getAdminUser(authentication);
 
+        String firstName = request.getFirstName().trim();
+        String lastName = request.getLastName().trim();
+        String fullName = firstName + " " + lastName;
+        String effectiveAddress = trimOrNull(request.getAddress());
+
+        adminUser.setName(fullName);
+        adminUser.setAddress(effectiveAddress);
+        userRepository.save(adminUser);
+
         AdminProfile profile = adminProfileRepository.findByUsersId(adminUser.getId())
                 .orElseGet(() -> AdminProfile.builder().users(adminUser).build());
 
@@ -113,11 +122,13 @@ public class AdminService {
         profile.setLegalEntityName(trimOrNull(request.getLegalEntityName()));
         profile.setGstNumber(trimOrNull(request.getGstNumber()));
         profile.setPanNumber(trimOrNull(request.getPanNumber()));
-        profile.setAdminFullName(request.getAdminFullName().trim());
+        profile.setFirstName(firstName);
+        profile.setLastName(lastName);
+        profile.setAdminFullName(fullName);
         profile.setDesignation(trimOrNull(request.getDesignation()));
         profile.setOfficePhone(trimOrNull(request.getOfficePhone()));
         profile.setWebsite(trimOrNull(request.getWebsite()));
-        profile.setAddress(trimOrNull(request.getAddress()));
+        profile.setAddress(effectiveAddress);
         profile.setCity(trimOrNull(request.getCity()));
         profile.setState(trimOrNull(request.getState()));
         profile.setCountry(trimOrNull(request.getCountry()));
@@ -173,6 +184,8 @@ public class AdminService {
                 .managerCode(managerCode)
                 .designation("Branch Operations Manager")
                 .department(ManagerDepartment.BRANCH_OPERATIONS.name())
+                .aadhaarNumber(request.getAadhaarNumber().trim())
+                .panNumber(request.getPanNumber().trim().toUpperCase())
                 .branch(branchProfile.getBranchName())
                 .branchCode(branchProfile.getBranchCode())
                 .region(branchProfile.getRegionName())
@@ -275,6 +288,8 @@ public class AdminService {
                 .gstNumber(profile.getGstNumber())
                 .panNumber(profile.getPanNumber())
                 .adminFullName(profile.getAdminFullName())
+                .firstName(profile.getFirstName())
+                .lastName(profile.getLastName())
                 .designation(profile.getDesignation())
                 .officePhone(profile.getOfficePhone())
                 .website(profile.getWebsite())
@@ -297,14 +312,22 @@ public class AdminService {
             throw new IllegalArgumentException("Phone number already exists: " + phone);
         }
 
+        String firstName = req.getFirstName().trim();
+        String lastName = req.getLastName().trim();
+        String fullName = firstName + " " + lastName;
+
+        String effectiveAddress = trimOrNull(
+                StringUtils.hasText(req.getCompanyAddress()) ? req.getCompanyAddress() : req.getAddress()
+        );
+
         Users adminUser = Users.builder()
-                .name(req.getName().trim())
+                .name(fullName)
                 .email(email)
                 .phone(phone)
                 .password(passwordEncoder.encode(req.getPassword()))
                 .role(Role.ADMIN)
                 .isHome(true)
-                .address(trimOrNull(req.getAddress()))
+                .address(effectiveAddress)
                 .build();
         Users savedUser = userRepository.save(adminUser);
 
@@ -315,11 +338,13 @@ public class AdminService {
                 .gstNumber(trimOrNull(req.getGstNumber()))
                 .legalEntityName(trimOrNull(req.getLegalEntityName()))
                 .panNumber(trimOrNull(req.getPanNumber()))
-                .adminFullName(req.getName().trim())
+                .adminFullName(fullName)
+                .firstName(firstName)
+                .lastName(lastName)
                 .designation(trimOrNull(req.getDesignation()))
                 .officePhone(trimOrNull(req.getCompanyPhone()))
                 .website(trimOrNull(req.getCompanyWebsite()))
-                .address(trimOrNull(StringUtils.hasText(req.getCompanyAddress()) ? req.getCompanyAddress() : req.getAddress()))
+                .address(effectiveAddress)
                 .state(trimOrNull(req.getState()))
                 .city(trimOrNull(req.getCity()))
                 .country(trimOrNull(req.getCountry()))
@@ -341,6 +366,8 @@ public class AdminService {
         return StringUtils.hasText(value) ? value.trim() : null;
     }
 }
+
+
 
 
 

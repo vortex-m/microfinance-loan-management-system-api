@@ -55,6 +55,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             return byEmail;
         }
 
+        Optional<Users> byPhone = userRepository.findByPhone(normalized);
+        if (byPhone.isPresent()) {
+            return byPhone;
+        }
+
         Optional<Users> byManagerCode = managerProfileRepository.findByManagerCodeWithUsers(normalized)
                 .map(com.microfinance.loan.manager.entity.ManagerProfile::getUsers)
                 .filter(user -> user.getRole() == Role.MANAGER);

@@ -3,6 +3,7 @@ package com.microfinance.loan.user.entity;
 import com.microfinance.loan.common.entity.Users;
 import com.microfinance.loan.common.enums.DisbursalMode;
 import com.microfinance.loan.common.enums.LoanStatus;
+import com.microfinance.loan.common.enums.OriginChannel;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -45,6 +46,14 @@ public class LoanApplication {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private DisbursalMode disbursalMode;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private OriginChannel originChannel;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_agent_id")
+    private Users createdByAgent;
 
     // Bank details are captured per loan when BANK_TRANSFER is chosen.
     private String disbursalBankName;
@@ -107,6 +116,9 @@ public class LoanApplication {
         this.status = LoanStatus.PENDING;
         if (this.disbursalMode == null) {
             this.disbursalMode = DisbursalMode.BANK_TRANSFER;
+        }
+        if (this.originChannel == null) {
+            this.originChannel = OriginChannel.SELF_SERVICE;
         }
         if (this.cashDisbursalOtpAttempts == null) {
             this.cashDisbursalOtpAttempts = 0;

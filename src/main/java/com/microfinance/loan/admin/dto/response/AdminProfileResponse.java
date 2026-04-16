@@ -23,6 +23,9 @@ public class AdminProfileResponse {
     private String panNumber;
 
     private String adminFullName;
+    private String firstName;
+    private String lastName;
+
     private String designation;
     private String officePhone;
     private String website;

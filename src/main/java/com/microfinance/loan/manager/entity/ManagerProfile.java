@@ -1,5 +1,6 @@
 package com.microfinance.loan.manager.entity;
 
+import com.microfinance.loan.branch.entity.BranchProfile;
 import com.microfinance.loan.common.entity.Users;
 import jakarta.persistence.*;
 import lombok.*;
@@ -24,6 +25,28 @@ public class ManagerProfile {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private Users users;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "branch_id")
+    private BranchProfile branchProfile;
+
+    private String firstName;
+    private String lastName;
+    private String email;
+    private String phoneNumber;
+    private String address;
+    private String city;
+    private String state;
+    private String country;
+    private String pinCode;
+    private String fathersName;
+    private String mothersName;
+
+    @Column(unique = true)
+    private String aadhaarNumber;
+
+    @Column(unique = true)
+    private String panNumber;
+
 
     @Column(nullable = false, unique = true)
     private String managerCode;
@@ -33,6 +56,7 @@ public class ManagerProfile {
     private String branch;
     private String branchCode;
     private String region;
+    private String regionCode;
 
 
     private LocalDate joiningDate;

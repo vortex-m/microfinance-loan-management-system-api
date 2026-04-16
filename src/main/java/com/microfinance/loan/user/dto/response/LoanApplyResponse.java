@@ -2,6 +2,7 @@ package com.microfinance.loan.user.dto.response;
 
 import com.microfinance.loan.common.enums.DisbursalMode;
 import com.microfinance.loan.common.enums.LoanStatus;
+import com.microfinance.loan.common.enums.OriginChannel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,7 +19,12 @@ import java.time.LocalDateTime;
 public class LoanApplyResponse {
     private Long loanApplicationId;
     private String applicationNumber;
+    private Long userId;
+    private Long createdByAgentId;
+    private Long assignedAgentId;
+    private Long assignedOfficerId;
     private LoanStatus status;
+    private OriginChannel originChannel;
 
     private Double requestedAmount;
     private Integer tenureMonths;

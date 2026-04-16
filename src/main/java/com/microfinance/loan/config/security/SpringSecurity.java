@@ -37,7 +37,8 @@ public class SpringSecurity {
 
         return http.authorizeHttpRequests(request -> request
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/auth/**", "/health-check").permitAll()
+                        .requestMatchers("/auth/**", "/health-check", "/admin/bootstrap").permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/users/**").hasRole("USER")
                         .requestMatchers("/agents/**").hasRole("AGENT")
                         .requestMatchers("/officers/**").hasRole("OFFICER")

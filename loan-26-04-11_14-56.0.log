@@ -1,0 +1,173 @@
+26-04-11 14:56:00.295 [tomcat-shutdown] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Graceful shutdown complete 
+26-04-11 14:56:00.297 [Thread-203] INFO  o.a.coyote.http11.Http11NioProtocol - Stopping ProtocolHandler ["http-nio-8080"] 
+26-04-11 14:56:00.300 [Thread-203] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default' 
+26-04-11 14:56:00.300 [Thread-203] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-50 - Shutdown initiated... 
+26-04-11 14:56:00.302 [Thread-203] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-50 - Shutdown completed. 
+26-04-11 14:56:01.072 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode. 
+26-04-11 14:56:01.224 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 151 ms. Found 27 JPA repository interfaces. 
+26-04-11 14:56:01.351 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http) 
+26-04-11 14:56:01.351 [restartedMain] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"] 
+26-04-11 14:56:01.352 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat] 
+26-04-11 14:56:01.352 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.53] 
+26-04-11 14:56:01.387 [restartedMain] INFO  o.a.c.c.C.[.[localhost].[/api] - Initializing Spring embedded WebApplicationContext 
+26-04-11 14:56:01.387 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 875 ms 
+26-04-11 14:56:01.444 [restartedMain] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default] 
+26-04-11 14:56:01.447 [restartedMain] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled 
+26-04-11 14:56:01.458 [restartedMain] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer 
+26-04-11 14:56:01.460 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-51 - Starting... 
+26-04-11 14:56:01.474 [restartedMain] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-51 - Added connection com.mysql.cj.jdbc.ConnectionImpl@33f80ba1 
+26-04-11 14:56:01.474 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-51 - Start completed. 
+26-04-11 14:56:01.475 [restartedMain] WARN  org.hibernate.orm.deprecation - HHH90000025: MySQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default) 
+26-04-11 14:56:01.476 [restartedMain] INFO  o.hibernate.orm.connections.pooling - HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-51)']
+	Database driver: undefined/unknown
+	Database version: 8.0.41
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown 
+26-04-11 14:56:02.025 [restartedMain] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration) 
+26-04-11 14:56:02.345 [restartedMain] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default' 
+26-04-11 14:56:02.652 [restartedMain] WARN  o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'loanController' defined in file [D:\Confidential\Loan Management System\loan-management-system-api\target\classes\com\microfinance\loan\loan\controller\LoanController.class]: Unsatisfied dependency expressed through constructor parameter 0: No qualifying bean of type 'com.microfinance.loan.user.service.UserLoanService' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {} 
+26-04-11 14:56:02.653 [restartedMain] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default' 
+26-04-11 14:56:02.653 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-51 - Shutdown initiated... 
+26-04-11 14:56:02.655 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-51 - Shutdown completed. 
+26-04-11 14:56:02.656 [restartedMain] INFO  o.a.catalina.core.StandardService - Stopping service [Tomcat] 
+26-04-11 14:56:02.659 [restartedMain] INFO  o.s.b.a.l.ConditionEvaluationReportLogger - 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled. 
+26-04-11 14:56:02.666 [restartedMain] ERROR o.s.b.d.LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Parameter 0 of constructor in com.microfinance.loan.loan.controller.LoanController required a bean of type 'com.microfinance.loan.user.service.UserLoanService' that could not be found.
+
+
+Action:
+
+Consider defining a bean of type 'com.microfinance.loan.user.service.UserLoanService' in your configuration.
+ 
+26-04-11 14:56:11.080 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode. 
+26-04-11 14:56:11.390 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 307 ms. Found 27 JPA repository interfaces. 
+26-04-11 14:56:11.559 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http) 
+26-04-11 14:56:11.559 [restartedMain] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"] 
+26-04-11 14:56:11.560 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat] 
+26-04-11 14:56:11.560 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.53] 
+26-04-11 14:56:11.608 [restartedMain] INFO  o.a.c.c.C.[.[localhost].[/api] - Initializing Spring embedded WebApplicationContext 
+26-04-11 14:56:11.608 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1171 ms 
+26-04-11 14:56:11.723 [restartedMain] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default] 
+26-04-11 14:56:11.725 [restartedMain] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled 
+26-04-11 14:56:11.733 [restartedMain] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer 
+26-04-11 14:56:11.734 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-52 - Starting... 
+26-04-11 14:56:11.740 [restartedMain] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-52 - Added connection com.mysql.cj.jdbc.ConnectionImpl@1835ebc0 
+26-04-11 14:56:11.740 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-52 - Start completed. 
+26-04-11 14:56:11.742 [restartedMain] WARN  org.hibernate.orm.deprecation - HHH90000025: MySQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default) 
+26-04-11 14:56:11.742 [restartedMain] INFO  o.hibernate.orm.connections.pooling - HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-52)']
+	Database driver: undefined/unknown
+	Database version: 8.0.41
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown 
+26-04-11 14:56:12.165 [restartedMain] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration) 
+26-04-11 14:56:12.445 [restartedMain] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default' 
+26-04-11 14:56:13.037 [restartedMain] WARN  o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning 
+26-04-11 14:56:13.139 [restartedMain] INFO  o.s.s.c.a.a.c.InitializeAuthenticationProviderBeanManagerConfigurer$InitializeAuthenticationProviderManagerConfigurer - Global AuthenticationManager configured with AuthenticationProvider bean with name authenticationProvider 
+26-04-11 14:56:13.140 [restartedMain] WARN  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR 
+26-04-11 14:56:13.268 [restartedMain] INFO  o.s.b.d.a.OptionalLiveReloadServer - LiveReload server is running on port 35729 
+26-04-11 14:56:13.276 [restartedMain] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"] 
+26-04-11 14:56:13.281 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/api' 
+26-04-11 14:56:13.286 [restartedMain] INFO  o.s.b.d.a.ConditionEvaluationDeltaLoggingListener - Condition evaluation unchanged 
+26-04-11 14:56:19.320 [File Watcher] INFO  o.s.b.d.a.LocalDevToolsAutoConfiguration$RestartingClassPathChangeChangedEventListener - Restarting due to 2 class path changes (0 additions, 2 deletions, 0 modifications) 
+26-04-11 14:56:19.324 [Thread-210] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete 
+26-04-11 14:56:19.326 [tomcat-shutdown] INFO  o.a.coyote.http11.Http11NioProtocol - Pausing ProtocolHandler ["http-nio-8080"] 
+26-04-11 14:56:19.759 [tomcat-shutdown] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Graceful shutdown complete 
+26-04-11 14:56:19.759 [Thread-210] INFO  o.a.coyote.http11.Http11NioProtocol - Stopping ProtocolHandler ["http-nio-8080"] 
+26-04-11 14:56:19.763 [Thread-210] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default' 
+26-04-11 14:56:19.764 [Thread-210] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-52 - Shutdown initiated... 
+26-04-11 14:56:19.765 [Thread-210] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-52 - Shutdown completed. 
+26-04-11 14:56:20.353 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode. 
+26-04-11 14:56:20.421 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 67 ms. Found 25 JPA repository interfaces. 
+26-04-11 14:56:20.507 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http) 
+26-04-11 14:56:20.508 [restartedMain] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"] 
+26-04-11 14:56:20.508 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat] 
+26-04-11 14:56:20.508 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.53] 
+26-04-11 14:56:20.536 [restartedMain] INFO  o.a.c.c.C.[.[localhost].[/api] - Initializing Spring embedded WebApplicationContext 
+26-04-11 14:56:20.536 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 562 ms 
+26-04-11 14:56:20.583 [restartedMain] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default] 
+26-04-11 14:56:20.585 [restartedMain] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled 
+26-04-11 14:56:20.594 [restartedMain] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer 
+26-04-11 14:56:20.595 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-53 - Starting... 
+26-04-11 14:56:20.604 [restartedMain] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-53 - Added connection com.mysql.cj.jdbc.ConnectionImpl@199c5866 
+26-04-11 14:56:20.604 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-53 - Start completed. 
+26-04-11 14:56:20.605 [restartedMain] WARN  org.hibernate.orm.deprecation - HHH90000025: MySQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default) 
+26-04-11 14:56:20.605 [restartedMain] INFO  o.hibernate.orm.connections.pooling - HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-53)']
+	Database driver: undefined/unknown
+	Database version: 8.0.41
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown 
+26-04-11 14:56:21.049 [restartedMain] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration) 
+26-04-11 14:56:21.451 [restartedMain] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default' 
+26-04-11 14:56:21.641 [restartedMain] WARN  o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'adminController' defined in file [D:\Confidential\Loan Management System\loan-management-system-api\target\classes\com\microfinance\loan\admin\controller\AdminController.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'adminService' defined in file [D:\Confidential\Loan Management System\loan-management-system-api\target\classes\com\microfinance\loan\admin\service\AdminService.class]: Unsatisfied dependency expressed through constructor parameter 8: No qualifying bean of type 'com.microfinance.loan.user.repository.LoanApplicationRepository' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {} 
+26-04-11 14:56:21.641 [restartedMain] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default' 
+26-04-11 14:56:21.641 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-53 - Shutdown initiated... 
+26-04-11 14:56:21.644 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-53 - Shutdown completed. 
+26-04-11 14:56:21.645 [restartedMain] INFO  o.a.catalina.core.StandardService - Stopping service [Tomcat] 
+26-04-11 14:56:21.650 [restartedMain] INFO  o.s.b.a.l.ConditionEvaluationReportLogger - 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled. 
+26-04-11 14:56:21.658 [restartedMain] ERROR o.s.b.d.LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Parameter 8 of constructor in com.microfinance.loan.admin.service.AdminService required a bean of type 'com.microfinance.loan.user.repository.LoanApplicationRepository' that could not be found.
+
+
+Action:
+
+Consider defining a bean of type 'com.microfinance.loan.user.repository.LoanApplicationRepository' in your configuration.
+ 
+26-04-11 14:56:23.510 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode. 
+26-04-11 14:56:23.607 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 95 ms. Found 27 JPA repository interfaces. 
+26-04-11 14:56:23.745 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http) 
+26-04-11 14:56:23.746 [restartedMain] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"] 
+26-04-11 14:56:23.746 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat] 
+26-04-11 14:56:23.746 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.53] 
+26-04-11 14:56:23.778 [restartedMain] INFO  o.a.c.c.C.[.[localhost].[/api] - Initializing Spring embedded WebApplicationContext 
+26-04-11 14:56:23.778 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 563 ms 
+26-04-11 14:56:23.837 [restartedMain] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default] 
+26-04-11 14:56:23.840 [restartedMain] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled 
+26-04-11 14:56:23.849 [restartedMain] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer 
+26-04-11 14:56:23.850 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-54 - Starting... 
+26-04-11 14:56:23.860 [restartedMain] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-54 - Added connection com.mysql.cj.jdbc.ConnectionImpl@5fd39e75 
+26-04-11 14:56:23.860 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-54 - Start completed. 
+26-04-11 14:56:23.863 [restartedMain] WARN  org.hibernate.orm.deprecation - HHH90000025: MySQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default) 
+26-04-11 14:56:23.863 [restartedMain] INFO  o.hibernate.orm.connections.pooling - HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-54)']
+	Database driver: undefined/unknown
+	Database version: 8.0.41
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown 
+26-04-11 14:56:24.355 [restartedMain] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration) 
+26-04-11 14:56:24.741 [restartedMain] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default' 
+26-04-11 14:56:25.374 [restartedMain] WARN  o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning 
+26-04-11 14:56:25.442 [restartedMain] INFO  o.s.s.c.a.a.c.InitializeAuthenticationProviderBeanManagerConfigurer$InitializeAuthenticationProviderManagerConfigurer - Global AuthenticationManager configured with AuthenticationProvider bean with name authenticationProvider 
+26-04-11 14:56:25.442 [restartedMain] WARN  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR 
+26-04-11 14:56:25.570 [restartedMain] INFO  o.s.b.d.a.OptionalLiveReloadServer - LiveReload server is running on port 35729 
+26-04-11 14:56:25.577 [restartedMain] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"] 
+26-04-11 14:56:25.582 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/api' 
+26-04-11 14:56:25.586 [restartedMain] INFO  o.s.b.d.a.ConditionEvaluationDeltaLoggingListener - Condition evaluation unchanged 

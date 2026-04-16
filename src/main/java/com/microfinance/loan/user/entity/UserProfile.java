@@ -1,7 +1,10 @@
 package com.microfinance.loan.user.entity;
 
+import com.microfinance.loan.branch.entity.BranchProfile;
 import com.microfinance.loan.common.entity.Users;
+import com.microfinance.loan.common.enums.ConsentMode;
 import com.microfinance.loan.common.enums.KycStatus;
+import com.microfinance.loan.common.enums.OriginChannel;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,6 +27,10 @@ public class UserProfile {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private Users users;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "branch_id")
+    private BranchProfile branchProfile;
 
 
     private String fatherName;
@@ -51,6 +58,18 @@ public class UserProfile {
     @Column(nullable = false)
     private KycStatus kycStatus;
 
+    @Enumerated(EnumType.STRING)
+    private OriginChannel originChannel;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assisted_by_agent_user_id")
+    private Users assistedByAgent;
+
+    @Enumerated(EnumType.STRING)
+    private ConsentMode consentMode;
+
+    private LocalDateTime consentCapturedAt;
+
 //    @Column(nullable = false)
 //    private Boolean kycApproved;
 
@@ -74,6 +93,9 @@ public class UserProfile {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         this.kycStatus = KycStatus.PENDING;
+        if (this.originChannel == null) {
+            this.originChannel = OriginChannel.SELF_SERVICE;
+        }
 //        if (this.kycApproved == null) {
 //            this.kycApproved = false;
 //        }

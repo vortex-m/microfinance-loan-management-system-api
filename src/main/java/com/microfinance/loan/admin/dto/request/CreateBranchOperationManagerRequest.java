@@ -2,6 +2,7 @@ package com.microfinance.loan.admin.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -30,6 +31,14 @@ public class CreateBranchOperationManagerRequest {
 
     @NotBlank(message = "Branch code is required")
     private String branchCode;
+
+    @NotBlank(message = "Aadhaar number is required")
+    @Pattern(regexp = "^[2-9]{1}[0-9]{11}$", message = "Invalid Aadhaar number")
+    private String aadhaarNumber;
+
+    @NotBlank(message = "PAN number is required")
+    @Pattern(regexp = "^[A-Z]{5}[0-9]{4}[A-Z]{1}$", message = "Invalid PAN number format")
+    private String panNumber;
 
     private String address;
 }

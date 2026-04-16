@@ -38,6 +38,8 @@ public class UpdateProfileRequest {
     private String wifeName;
     private String husbandName;
 
+    private String branchCode;
+
     @Pattern(regexp = "^[1-9][0-9]{5}$",
             message = "Invalid pincode")
     private String pinCode;

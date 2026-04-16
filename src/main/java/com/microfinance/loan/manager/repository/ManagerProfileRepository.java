@@ -17,6 +17,13 @@ public interface ManagerProfileRepository extends JpaRepository<ManagerProfile, 
 
     Optional<ManagerProfile> findByUsersId(Long userId);
 
+    @Query("select mp from ManagerProfile mp join fetch mp.users left join fetch mp.branchProfile where mp.users.id = :userId")
+    Optional<ManagerProfile> findByUsersIdWithBranch(@Param("userId") Long userId);
+
     boolean existsByUsersId(Long userId);
+
+    boolean existsByManagerCode(String managerCode);
+
+    boolean existsByBranchProfileBranchCodeAndDepartmentIgnoreCase(String branchCode, String department);
 }
 

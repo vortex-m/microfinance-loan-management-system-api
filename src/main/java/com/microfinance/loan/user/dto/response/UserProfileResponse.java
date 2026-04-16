@@ -39,6 +39,10 @@ public class UserProfileResponse {
     private String bankAccountNumber;
     private String ifscCode;
 
+    private String branchCode;
+    private String branchName;
+    private String regionCode;
+
     // KYC
     private String aadhaarNumber;
     private String panNumber;

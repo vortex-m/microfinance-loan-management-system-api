@@ -1,4 +1,4 @@
-package com.microfinance.loan.manager.dto;
+package com.microfinance.loan.manager.dto.response;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -10,4 +10,11 @@ public class DashboardResponse {
     private Integer totalFraudAlerts;
     private Integer totalOpenAudits;
     private Integer totalActiveStaff;
+    private Integer pendingOfficerReview;
+    private Integer pendingManagerApproval;
+    private Integer approvedLoans;
+    private Integer disbursedLoans;
+    private Integer activeUsers;
+    private Integer activeOfficers;
+    private Integer activeAgents;
 }

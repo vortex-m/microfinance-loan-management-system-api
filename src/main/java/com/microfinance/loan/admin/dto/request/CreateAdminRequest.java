@@ -13,8 +13,11 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class CreateAdminRequest {
-    @NotBlank(message = "Name is required.")
-    private String name;
+    @NotBlank(message = "First Name is required.")
+    private String firstName;
+
+    @NotBlank(message = "Last Name is required.")
+    private String lastName;
 
     @NotBlank(message = "Email is required.")
     @Email(message = "Invalid email format")

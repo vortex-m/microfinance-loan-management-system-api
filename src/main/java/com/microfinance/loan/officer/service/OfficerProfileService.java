@@ -69,6 +69,10 @@ public class OfficerProfileService {
 	}
 
 	private OfficerProfileResponse mapToResponse(OfficerProfile profile, Users user) {
+		String branchName = profile.getBranchProfile() != null ? profile.getBranchProfile().getBranchName() : profile.getBranch();
+		String branchCode = profile.getBranchProfile() != null ? profile.getBranchProfile().getBranchCode() : profile.getBranchCode();
+		String regionCode = profile.getBranchProfile() != null ? profile.getBranchProfile().getRegionCode() : null;
+
 		return OfficerProfileResponse.builder()
 				.userId(user.getId())
 				.name(user.getName())
@@ -78,8 +82,9 @@ public class OfficerProfileService {
 				.officerCode(profile.getOfficerCode())
 				.designation(profile.getDesignation())
 				.department(profile.getDepartment())
-				.branch(profile.getBranch())
-				.branchCode(profile.getBranchCode())
+				.branch(branchName)
+				.branchCode(branchCode)
+				.regionCode(regionCode)
 				.fatherName(profile.getFatherName())
 				.motherName(profile.getMotherName())
 				.dateOfBirth(profile.getDateOfBirth())

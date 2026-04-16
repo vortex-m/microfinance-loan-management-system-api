@@ -1,5 +1,6 @@
 package com.microfinance.loan.officer.entity;
 
+import com.microfinance.loan.branch.entity.BranchProfile;
 import com.microfinance.loan.common.entity.Users;
 import com.microfinance.loan.common.enums.OfficerStatus;
 import jakarta.persistence.*;
@@ -24,6 +25,10 @@ public class OfficerProfile {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private Users users;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "branch_id")
+    private BranchProfile branchProfile;
 
 
     @Column(nullable = false, unique = true)

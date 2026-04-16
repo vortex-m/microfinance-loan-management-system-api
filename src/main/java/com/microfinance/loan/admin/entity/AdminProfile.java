@@ -47,6 +47,11 @@ public class AdminProfile {
 
     @Column(nullable = false)
     private String adminFullName;
+    @Column(nullable = false)
+    private String firstName;
+    @Column(nullable = false)
+    private String lastName;
+
 
     private String designation;
     private String officePhone;

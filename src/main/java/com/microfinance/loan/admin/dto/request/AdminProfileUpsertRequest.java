@@ -14,6 +14,10 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class AdminProfileUpsertRequest {
+    @NotBlank(message = "First name is required.")
+    private String firstName;
+    @NotBlank(message = "Last name is required.")
+    private String lastName;
 
     @NotBlank(message = "Company name is required")
     private String companyName;
@@ -23,7 +27,7 @@ public class AdminProfileUpsertRequest {
     private String gstNumber;
     private String panNumber;
 
-    @NotBlank(message = "Admin full name is required")
+//    @NotBlank(message = "Admin full name is required")
     private String adminFullName;
 
     private String designation;

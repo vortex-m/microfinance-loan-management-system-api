@@ -26,5 +26,7 @@ public class ManagerProfileResponse {
     private String pinCode;
     private String fathersName;
     private String mothersName;
+    private String aadhaarNumber;
+    private String panNumber;
 }
 

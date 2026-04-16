@@ -29,7 +29,7 @@ public class StaffRequestValidator {
         if(!StringUtils.hasText(request.getDesignation())){
             throw new IllegalArgumentException("Designation is required.");
         }
-        if(!StringUtils.hasText(request.getDepartment())){
+        if(request.getDepartment() == null){
             throw new IllegalArgumentException("Department is required.");
         }
         if(!StringUtils.hasText(request.getBranchCode())){

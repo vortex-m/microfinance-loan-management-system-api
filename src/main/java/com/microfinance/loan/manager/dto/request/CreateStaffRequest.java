@@ -1,9 +1,11 @@
 package com.microfinance.loan.manager.dto.request;
 
 import com.microfinance.loan.common.enums.Role;
+import com.microfinance.loan.common.enums.ManagerDepartment;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -34,7 +36,18 @@ public class CreateStaffRequest {
     private String code;
 
     private String designation;
-    private String department;
+
+    @NotNull(message = "Department is required")
+    private ManagerDepartment department;
+
+    @NotBlank(message = "Aadhaar number is required")
+    @Pattern(regexp = "^[2-9]{1}[0-9]{11}$", message = "Invalid Aadhaar number")
+    private String aadhaarNumber;
+
+    @NotBlank(message = "PAN number is required")
+    @Pattern(regexp = "^[A-Z]{5}[0-9]{4}[A-Z]{1}$", message = "Invalid PAN number format")
+    private String panNumber;
+
     private String branch;
     private String branchCode;
     private String address;

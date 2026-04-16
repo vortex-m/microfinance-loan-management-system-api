@@ -46,6 +46,10 @@ public class AuthService {
 
 	@Transactional
 	public RegisterResponse register(RegisterRequest request) {
+		if (request.getRole() != Role.USER) {
+			throw new IllegalArgumentException("Public registration is allowed only for USER role");
+		}
+
 		if (userRepository.existsByEmail(request.getEmail().trim().toLowerCase())) {
 			throw new IllegalArgumentException("Email already exists");
 		}
@@ -59,7 +63,7 @@ public class AuthService {
 				.phone(request.getPhone().trim())
 				.password(passwordEncoder.encode(request.getPassword()))
 				.isHome(false)
-				.role(request.getRole())
+				.role(Role.USER)
 				.address(request.getAddress())
 				.build();
 

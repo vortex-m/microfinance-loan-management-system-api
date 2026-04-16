@@ -69,6 +69,10 @@ public class AgentProfileService {
 	}
 
 	private AgentProfileResponse mapToResponse(AgentProfile profile, Users user) {
+		String branchName = profile.getBranchProfile() != null ? profile.getBranchProfile().getBranchName() : profile.getBranch();
+		String branchCode = profile.getBranchProfile() != null ? profile.getBranchProfile().getBranchCode() : profile.getBranchCode();
+		String regionCode = profile.getBranchProfile() != null ? profile.getBranchProfile().getRegionCode() : null;
+
 		return AgentProfileResponse.builder()
 				.userId(user.getId())
 				.name(user.getName())
@@ -78,8 +82,9 @@ public class AgentProfileService {
 				.agentCode(profile.getAgentCode())
 				.designation(profile.getDesignation())
 				.department(profile.getDepartment())
-				.branch(profile.getBranch())
-				.branchCode(profile.getBranchCode())
+				.branch(branchName)
+				.branchCode(branchCode)
+				.regionCode(regionCode)
 				.fatherName(profile.getFatherName())
 				.motherName(profile.getMotherName())
 				.dateOfBirth(profile.getDateOfBirth())

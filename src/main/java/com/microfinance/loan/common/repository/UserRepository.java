@@ -1,6 +1,7 @@
 package com.microfinance.loan.common.repository;
 
 import com.microfinance.loan.common.entity.Users;
+import com.microfinance.loan.common.enums.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -10,7 +11,11 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<Users, Long> {
     Optional<Users> findByEmail(String email);
 
+    Optional<Users> findByPhone(String phone);
+
     boolean existsByEmail(String email);
 
     boolean existsByPhone(String phone);
+
+    long countByRole(Role role);
 }

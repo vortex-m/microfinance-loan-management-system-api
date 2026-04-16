@@ -26,6 +26,7 @@ public class OfficerProfileResponse {
 	private String department;
 	private String branch;
 	private String branchCode;
+	private String regionCode;
 
 	private String fatherName;
 	private String motherName;

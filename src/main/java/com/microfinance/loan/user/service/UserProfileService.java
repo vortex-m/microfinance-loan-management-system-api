@@ -1,5 +1,7 @@
 package com.microfinance.loan.user.service;
 
+import com.microfinance.loan.branch.entity.BranchProfile;
+import com.microfinance.loan.branch.repository.BranchProfileRepository;
 import com.microfinance.loan.common.entity.Users;
 import com.microfinance.loan.common.enums.Role;
 import com.microfinance.loan.common.repository.UserRepository;
@@ -16,10 +18,14 @@ public class UserProfileService {
 
     private final UserProfileRepository userProfileRepository;
     private final UserRepository userRepository;
+    private final BranchProfileRepository branchProfileRepository;
 
-    public UserProfileService(UserProfileRepository userProfileRepository, UserRepository userRepository) {
+    public UserProfileService(UserProfileRepository userProfileRepository,
+                              UserRepository userRepository,
+                              BranchProfileRepository branchProfileRepository) {
         this.userProfileRepository = userProfileRepository;
         this.userRepository = userRepository;
+        this.branchProfileRepository = branchProfileRepository;
     }
 
     @Transactional
@@ -82,6 +88,11 @@ public class UserProfileService {
         if(request.getDateOfBirth() != null) {
             profile.setDateOfBirth(request.getDateOfBirth());
         }
+        if (StringUtils.hasText(request.getBranchCode())) {
+            BranchProfile branchProfile = branchProfileRepository.findByBranchCodeIgnoreCase(request.getBranchCode().trim())
+                    .orElseThrow(() -> new IllegalArgumentException("Branch not found: " + request.getBranchCode()));
+            profile.setBranchProfile(branchProfile);
+        }
     }
 
     private boolean isOnboardingComplete(UserProfile profile) {
@@ -115,6 +126,9 @@ public class UserProfileService {
                 .occupation(profile.getOccupation())
                 .maritalStatus(profile.getMaritalStatus())
                 .monthlyIncome(profile.getMonthlyIncome())
+                .branchCode(profile.getBranchProfile() != null ? profile.getBranchProfile().getBranchCode() : null)
+                .branchName(profile.getBranchProfile() != null ? profile.getBranchProfile().getBranchName() : null)
+                .regionCode(profile.getBranchProfile() != null ? profile.getBranchProfile().getRegionCode() : null)
                 .aadhaarNumber(profile.getAadhaarNumber())
                 .panNumber(profile.getPanNumber())
                 .kycStatus(profile.getKycStatus())

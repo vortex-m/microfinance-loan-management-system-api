@@ -137,6 +137,12 @@ public class OfficerKycService {
 			profile.setKycStatus(KycStatus.PENDING);
 		}
 
+		kycDocumentRepository.findTopByUserIdAndDocumentTypeAndIsActiveTrueOrderByVersionDesc(userId, KycDocumentType.AADHAAR)
+				.ifPresent(doc -> profile.setAadhaarNumber(doc.getDocumentNumber()));
+
+		kycDocumentRepository.findTopByUserIdAndDocumentTypeAndIsActiveTrueOrderByVersionDesc(userId, KycDocumentType.PAN)
+				.ifPresent(doc -> profile.setPanNumber(doc.getDocumentNumber()));
+
 		return userProfileRepository.save(profile);
 	}
 
