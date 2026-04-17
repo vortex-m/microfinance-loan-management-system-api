@@ -35,4 +35,12 @@ public class AgentTaskResponse {
 	private LocalDateTime acceptedAt;
 	private LocalDateTime startedAt;
 	private LocalDateTime completedAt;
+
+	private LocalDateTime collectionPlannedAt;
+	private LocalDateTime collectionStartedAt;
+	private Double collectionStartedLat;
+	private Double collectionStartedLng;
+	private LocalDateTime collectionVerifiedAt;
+	private Double collectionVerifiedLat;
+	private Double collectionVerifiedLng;
 }

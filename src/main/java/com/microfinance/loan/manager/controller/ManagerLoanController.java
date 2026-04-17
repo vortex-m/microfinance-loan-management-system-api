@@ -5,6 +5,7 @@ import com.microfinance.loan.manager.dto.request.LoanAgentAssignmentRequest;
 import com.microfinance.loan.manager.dto.request.ManagerLoanDecisionRequest;
 import com.microfinance.loan.manager.dto.response.ManagerLoanResponse;
 import com.microfinance.loan.manager.service.ManagerLoanService;
+import com.microfinance.loan.officer.dto.response.VerificationEvidenceResponse;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -78,6 +79,16 @@ public class ManagerLoanController {
 		return ApiResponse.success(
 				"Agent reassigned successfully",
 				managerLoanService.reassignAgent(authentication, loanApplicationId, request)
+		);
+	}
+
+	@PreAuthorize("hasRole('MANAGER')")
+	@GetMapping("/{loanApplicationId}/verification-evidence")
+	public ApiResponse<VerificationEvidenceResponse> getVerificationEvidence(Authentication authentication,
+												@PathVariable Long loanApplicationId) {
+		return ApiResponse.success(
+				"Verification evidence fetched successfully",
+				managerLoanService.getVerificationEvidence(authentication, loanApplicationId)
 		);
 	}
 }

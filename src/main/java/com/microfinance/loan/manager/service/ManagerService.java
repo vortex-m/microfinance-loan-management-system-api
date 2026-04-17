@@ -2,6 +2,7 @@ package com.microfinance.loan.manager.service;
 
 import com.microfinance.loan.branch.entity.BranchProfile;
 import com.microfinance.loan.common.enums.AgentStatus;
+import com.microfinance.loan.common.enums.CashSettlementStatus;
 import com.microfinance.loan.common.enums.LoanStatus;
 import com.microfinance.loan.common.enums.ManagerDepartment;
 import com.microfinance.loan.common.enums.OfficerStatus;
@@ -16,6 +17,7 @@ import com.microfinance.loan.manager.dto.response.StaffCreateResponse;
 import com.microfinance.loan.manager.entity.ManagerProfile;
 import com.microfinance.loan.manager.repository.ManagerProfileRepository;
 import com.microfinance.loan.officer.repository.OfficerProfileRepository;
+import com.microfinance.loan.payment.repository.TransactionRepository;
 import com.microfinance.loan.user.repository.LoanApplicationRepository;
 import com.microfinance.loan.user.repository.UserProfileRepository;
 import org.springframework.security.core.Authentication;
@@ -36,6 +38,7 @@ public class ManagerService {
     private final UserProfileRepository userProfileRepository;
     private final OfficerProfileRepository officerProfileRepository;
     private final AgentProfileRepository agentProfileRepository;
+    private final TransactionRepository transactionRepository;
 
     public ManagerService(StaffService staffService,
                           CurrentUserService currentUserService,
@@ -43,7 +46,8 @@ public class ManagerService {
                           LoanApplicationRepository loanApplicationRepository,
                           UserProfileRepository userProfileRepository,
                           OfficerProfileRepository officerProfileRepository,
-                          AgentProfileRepository agentProfileRepository) {
+                          AgentProfileRepository agentProfileRepository,
+                          TransactionRepository transactionRepository) {
         this.staffService = staffService;
         this.currentUserService = currentUserService;
         this.managerProfileRepository = managerProfileRepository;
@@ -51,6 +55,7 @@ public class ManagerService {
         this.userProfileRepository = userProfileRepository;
         this.officerProfileRepository = officerProfileRepository;
         this.agentProfileRepository = agentProfileRepository;
+        this.transactionRepository = transactionRepository;
     }
 
     public StaffCreateResponse createAgent(Authentication authentication, CreateStaffRequest request) {
@@ -80,10 +85,17 @@ public class ManagerService {
         long pendingManager = loanApplicationRepository.countByBranchCodeAndStatus(branchCode, LoanStatus.PENDING_MANAGER_APPROVAL);
         long approved = loanApplicationRepository.countByBranchCodeAndStatus(branchCode, LoanStatus.APPROVED);
         long disbursed = loanApplicationRepository.countByBranchCodeAndStatus(branchCode, LoanStatus.DISBURSED);
+        long rejected = loanApplicationRepository.countByBranchCodeAndStatus(branchCode, LoanStatus.REJECTED);
+        long closed = loanApplicationRepository.countByBranchCodeAndStatus(branchCode, LoanStatus.CLOSED);
+        Double totalPortfolio = loanApplicationRepository.sumTotalAmountByBranchCode(branchCode);
 
         long activeUsers = userProfileRepository.countByBranchCodeAndUserStatus(branchCode, UserStatus.ACTIVE);
         long activeOfficers = officerProfileRepository.countByBranchProfileBranchCodeAndOfficerStatus(branchCode, OfficerStatus.ACTIVE);
         long activeAgents = agentProfileRepository.countByBranchProfileBranchCodeAndAgentStatus(branchCode, AgentStatus.ACTIVE);
+        double unsettled = safeAmount(transactionRepository.sumCashAmountByBranchAndSettlementStatus(
+                branchCode, CashSettlementStatus.COLLECTED_UNSETTLED));
+        double settled = safeAmount(transactionRepository.sumCashAmountByBranchAndSettlementStatus(
+                branchCode, CashSettlementStatus.SETTLED));
 
         return DashboardResponse.builder()
                 .totalPendingLoans(Math.toIntExact(pendingOfficer + pendingManager))
@@ -94,9 +106,15 @@ public class ManagerService {
                 .pendingManagerApproval(Math.toIntExact(pendingManager))
                 .approvedLoans(Math.toIntExact(approved))
                 .disbursedLoans(Math.toIntExact(disbursed))
+                .rejectedLoans(Math.toIntExact(rejected))
+                .closedLoans(Math.toIntExact(closed))
                 .activeUsers(Math.toIntExact(activeUsers))
                 .activeOfficers(Math.toIntExact(activeOfficers))
                 .activeAgents(Math.toIntExact(activeAgents))
+                .totalPortfolioAmount(totalPortfolio == null ? 0d : Math.round(totalPortfolio * 100d) / 100d)
+                .totalCollectedCash(round(unsettled + settled))
+                .totalSettledCash(round(settled))
+                .totalUnsettledCash(round(unsettled))
                 .build();
     }
 
@@ -194,5 +212,13 @@ public class ManagerService {
             throw new IllegalArgumentException("Manager is not assigned to any branch");
         }
         return managerProfile;
+    }
+
+    private double safeAmount(Double amount) {
+        return amount == null ? 0d : amount;
+    }
+
+    private double round(double value) {
+        return Math.round(value * 100d) / 100d;
     }
 }

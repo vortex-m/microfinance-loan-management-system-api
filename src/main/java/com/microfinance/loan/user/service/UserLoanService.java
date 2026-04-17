@@ -1,5 +1,6 @@
 package com.microfinance.loan.user.service;
 
+import com.microfinance.loan.agent.dto.request.AgentLoanApplyForUserRequest;
 import com.microfinance.loan.agent.entity.AgentProfile;
 import com.microfinance.loan.agent.repository.AgentProfileRepository;
 import com.microfinance.loan.common.entity.Users;
@@ -12,7 +13,6 @@ import com.microfinance.loan.common.repository.UserRepository;
 import com.microfinance.loan.common.service.FileStorageService;
 import com.microfinance.loan.loan.entity.Loan;
 import com.microfinance.loan.loan.repository.LoanRepository;
-import com.microfinance.loan.agent.dto.request.AgentLoanApplyForUserRequest;
 import com.microfinance.loan.user.dto.request.LoanApplyRequest;
 import com.microfinance.loan.user.dto.response.BankProofUploadResponse;
 import com.microfinance.loan.user.dto.response.LoanApplyResponse;
@@ -23,12 +23,14 @@ import com.microfinance.loan.user.entity.UserProfile;
 import com.microfinance.loan.user.repository.KycDocumentRepository;
 import com.microfinance.loan.user.repository.LoanApplicationRepository;
 import com.microfinance.loan.user.repository.UserProfileRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -39,6 +41,12 @@ import java.util.UUID;
 public class UserLoanService {
 
 	private final UserRepository userRepository;
+	@Value("${ai.scoring.loan-application-max-risk-score:0.90}")
+	private double maxLoanApplicationRiskScore;
+
+	@Value("${ai.scoring.loan-application-max-score-age-hours:72}")
+	private long maxScoreAgeHours;
+
 	private final UserProfileRepository userProfileRepository;
 	private final LoanApplicationRepository loanApplicationRepository;
 	private final KycDocumentRepository kycDocumentRepository;
@@ -71,8 +79,8 @@ public class UserLoanService {
 				.orElseThrow(() -> new IllegalArgumentException("Complete profile and KYC first."));
 
 		validateLoanEligibility(user, profile);
+		validateScoreEligibility(profile);
 		validateTenure(request.getTenureMonths());
-
 		validateDisbursalFields(request);
 
 		LoanApplication application = LoanApplication.builder()
@@ -119,20 +127,9 @@ public class UserLoanService {
 			throw new IllegalArgumentException("User is not mapped to any branch");
 		}
 
-		if (!agentProfile.getBranchProfile().getBranchCode().equalsIgnoreCase(profile.getBranchProfile().getBranchCode())) {
-			throw new IllegalArgumentException("Agent can apply loan only for users in same branch");
-		}
-
 		validateLoanEligibility(user, profile);
+		validateScoreEligibility(profile);
 		validateTenure(request.getTenureMonths());
-
-		if (profile.getCreditScore() == null || profile.getRiskScore() == null || profile.getScoreUpdatedAt() == null) {
-			throw new IllegalArgumentException("User score is not available. Run scoring before loan application.");
-		}
-
-		if (profile.getRiskScore() > 0.90d) {
-			throw new IllegalArgumentException("User risk score is too high for agent-assisted application. Escalate to manager.");
-		}
 
 		LoanApplyRequest normalized = LoanApplyRequest.builder()
 				.requestedAmount(request.getRequestedAmount())
@@ -290,6 +287,21 @@ public class UserLoanService {
 		);
 		if (!aadhaarVerified || !panVerified) {
 			throw new IllegalArgumentException("Verified Aadhaar and PAN are required before loan application.");
+		}
+	}
+
+	private void validateScoreEligibility(UserProfile profile) {
+		if (profile.getCreditScore() == null || profile.getRiskScore() == null || profile.getScoreUpdatedAt() == null) {
+			throw new IllegalArgumentException("User score is not available. Run scoring before loan application.");
+		}
+
+		long scoreAgeHours = Duration.between(profile.getScoreUpdatedAt(), LocalDateTime.now()).toHours();
+		if (scoreAgeHours > maxScoreAgeHours) {
+			throw new IllegalArgumentException("User score is stale. Please refresh score before loan application.");
+		}
+
+		if (profile.getRiskScore() > maxLoanApplicationRiskScore) {
+			throw new IllegalArgumentException("User risk score is too high for loan application. Escalate to manager.");
 		}
 	}
 

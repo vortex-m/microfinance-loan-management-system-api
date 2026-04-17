@@ -1,7 +1,6 @@
 package com.microfinance.loan.manager.service;
 
 import com.microfinance.loan.branch.entity.BranchProfile;
-import com.microfinance.loan.branch.repository.BranchProfileRepository;
 import com.microfinance.loan.common.enums.ManagerDepartment;
 import com.microfinance.loan.common.enums.Role;
 import com.microfinance.loan.common.service.CurrentUserService;
@@ -34,8 +33,6 @@ class ManagerServiceTest {
     @Mock
     private ManagerProfileRepository managerProfileRepository;
 
-    @Mock
-    private BranchProfileRepository branchProfileRepository;
 
     @Mock
     private Authentication authentication;

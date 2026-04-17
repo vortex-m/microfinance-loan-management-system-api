@@ -1,6 +1,7 @@
 package com.microfinance.loan.user.dto.response;
 
 import com.microfinance.loan.common.enums.PaymentStatus;
+import com.microfinance.loan.common.enums.CashSettlementStatus;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -33,7 +34,9 @@ public class PaymentHistoryResponse {
         private PaymentStatus paymentStatus;
         private String gatewayTransactionId;
         private String paymentReference;
+        private CashSettlementStatus cashSettlementStatus;
         private LocalDateTime cashVerifiedAt;
+        private LocalDateTime settledAt;
         private LocalDateTime paidAt;
         private String receiptNumber;
     }

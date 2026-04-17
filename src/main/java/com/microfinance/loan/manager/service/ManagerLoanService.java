@@ -1,14 +1,24 @@
 package com.microfinance.loan.manager.service;
 
 import com.microfinance.loan.agent.entity.AgentProfile;
+import com.microfinance.loan.agent.entity.AgentTask;
+import com.microfinance.loan.agent.entity.VerificationImage;
+import com.microfinance.loan.agent.entity.VerificationReport;
 import com.microfinance.loan.agent.repository.AgentProfileRepository;
+import com.microfinance.loan.agent.repository.AgentTaskRepository;
+import com.microfinance.loan.agent.repository.VerificationImageRepository;
+import com.microfinance.loan.agent.repository.VerificationReportRepository;
 import com.microfinance.loan.common.entity.Users;
 import com.microfinance.loan.common.enums.AgentAvailability;
 import com.microfinance.loan.common.enums.AgentStatus;
+import com.microfinance.loan.common.enums.AgentTaskType;
 import com.microfinance.loan.common.enums.DisbursalMode;
 import com.microfinance.loan.common.enums.LoanStatus;
 import com.microfinance.loan.common.enums.ManagerDecision;
 import com.microfinance.loan.common.enums.ManagerDepartment;
+import com.microfinance.loan.common.enums.ReviewDecision;
+import com.microfinance.loan.common.enums.TaskStatus;
+import com.microfinance.loan.common.enums.VerificationStatus;
 import com.microfinance.loan.common.service.CurrentUserService;
 import com.microfinance.loan.loan.entity.Loan;
 import com.microfinance.loan.loan.repository.LoanRepository;
@@ -23,6 +33,7 @@ import com.microfinance.loan.manager.entity.ManagerProfile;
 import com.microfinance.loan.manager.repository.AuditLogRepository;
 import com.microfinance.loan.manager.repository.ManagerProfileRepository;
 import com.microfinance.loan.officer.entity.LoanReview;
+import com.microfinance.loan.officer.dto.response.VerificationEvidenceResponse;
 import com.microfinance.loan.officer.repository.LoanReviewRepository;
 import com.microfinance.loan.user.entity.LoanApplication;
 import com.microfinance.loan.user.repository.LoanApplicationRepository;
@@ -51,6 +62,9 @@ public class ManagerLoanService {
 	private final LoanRepository loanRepository;
 	private final UserProfileRepository userProfileRepository;
 	private final AuditLogRepository auditLogRepository;
+	private final AgentTaskRepository agentTaskRepository;
+	private final VerificationReportRepository verificationReportRepository;
+	private final VerificationImageRepository verificationImageRepository;
 
 	public ManagerLoanService(LoanApplicationRepository loanApplicationRepository,
 							  ManagerProfileRepository managerProfileRepository,
@@ -60,7 +74,10 @@ public class ManagerLoanService {
 							  LoanService loanService,
 							  LoanRepository loanRepository,
 							  UserProfileRepository userProfileRepository,
-							  AuditLogRepository auditLogRepository) {
+							  AuditLogRepository auditLogRepository,
+							  AgentTaskRepository agentTaskRepository,
+							  VerificationReportRepository verificationReportRepository,
+							  VerificationImageRepository verificationImageRepository) {
 		this.loanApplicationRepository = loanApplicationRepository;
 		this.managerProfileRepository = managerProfileRepository;
 		this.currentUserService = currentUserService;
@@ -70,6 +87,75 @@ public class ManagerLoanService {
 		this.loanRepository = loanRepository;
 		this.userProfileRepository = userProfileRepository;
 		this.auditLogRepository = auditLogRepository;
+		this.agentTaskRepository = agentTaskRepository;
+		this.verificationReportRepository = verificationReportRepository;
+		this.verificationImageRepository = verificationImageRepository;
+	}
+
+	@Transactional(readOnly = true)
+	public VerificationEvidenceResponse getVerificationEvidence(Authentication authentication, Long loanApplicationId) {
+		ManagerProfile managerProfile = getEligibleManager(authentication);
+
+		LoanApplication application = loanApplicationRepository.findById(loanApplicationId)
+				.orElseThrow(() -> new IllegalArgumentException("Loan application not found: " + loanApplicationId));
+		validateBranchScope(managerProfile, application);
+
+		AgentTask verificationTask = agentTaskRepository
+				.findTopByLoanApplicationIdAndTaskTypeOrderByCreatedAtDesc(loanApplicationId, AgentTaskType.VERIFICATION)
+				.orElse(null);
+
+		VerificationReport report = verificationReportRepository.findTopByLoanApplicationIdOrderByCreatedAtDesc(loanApplicationId)
+				.orElse(null);
+
+		List<VerificationImage> images = report == null || report.getId() == null
+				? List.of()
+				: verificationImageRepository.findByVerificationReportIdOrderByCreatedAtDesc(report.getId());
+
+		AgentTask collectionTask = agentTaskRepository
+				.findTopByLoanApplicationIdAndTaskTypeOrderByCreatedAtDesc(loanApplicationId, AgentTaskType.CASH_COLLECTION)
+				.orElse(null);
+
+		Users assignedAgent = application.getAssignedAgent();
+		AgentProfile assignedAgentProfile = assignedAgent == null ? null
+				: agentProfileRepository.findByUsersId(assignedAgent.getId()).orElse(null);
+
+		return VerificationEvidenceResponse.builder()
+				.loanApplicationId(application.getId())
+				.assignedAgentId(assignedAgent != null ? assignedAgent.getId() : null)
+				.assignedAgentName(assignedAgent != null ? assignedAgent.getName() : null)
+				.verificationTaskId(verificationTask != null ? verificationTask.getId() : null)
+				.verificationTaskStatus(verificationTask != null ? verificationTask.getTaskStatus() : null)
+				.verificationTaskStartedAt(verificationTask != null ? verificationTask.getStartedAt() : null)
+				.verificationTaskCompletedAt(verificationTask != null ? verificationTask.getCompletedAt() : null)
+				.verificationStatus(report != null ? report.getVerificationStatus() : null)
+				.visitedAt(report != null ? report.getVisitedAt() : null)
+				.submittedAt(report != null ? report.getSubmittedAt() : null)
+				.visitLatitude(report != null ? report.getVisitLatitude() : null)
+				.visitLongitude(report != null ? report.getVisitLongitude() : null)
+				.visitAddress(report != null ? report.getVisitAddress() : null)
+				.reportSummary(report != null ? report.getAgentRemarks() : null)
+				.riskNotes(report != null ? report.getRiskNotes() : null)
+				.imageCount(images.size())
+				.images(images.stream().map(img -> VerificationEvidenceResponse.ImageEvidenceItem.builder()
+						.imageId(img.getId())
+						.fileUrl(img.getFileUrl())
+						.imageTag(img.getImageTag())
+						.description(img.getDescription())
+						.captureLatitude(img.getCaptureLatitude())
+						.captureLongitude(img.getCaptureLongitude())
+						.capturedAt(img.getCapturedAt())
+						.build()).toList())
+				.collectionPlannedAt(collectionTask != null ? collectionTask.getCollectionPlannedAt() : null)
+				.collectionStartedAt(collectionTask != null ? collectionTask.getCollectionStartedAt() : null)
+				.collectionStartedLat(collectionTask != null ? collectionTask.getCollectionStartedLat() : null)
+				.collectionStartedLng(collectionTask != null ? collectionTask.getCollectionStartedLng() : null)
+				.collectionVerifiedAt(collectionTask != null ? collectionTask.getCollectionVerifiedAt() : null)
+				.collectionVerifiedLat(collectionTask != null ? collectionTask.getCollectionVerifiedLat() : null)
+				.collectionVerifiedLng(collectionTask != null ? collectionTask.getCollectionVerifiedLng() : null)
+				.agentLastLatitude(assignedAgentProfile != null ? assignedAgentProfile.getLastLatitude() : null)
+				.agentLastLongitude(assignedAgentProfile != null ? assignedAgentProfile.getLastLongitude() : null)
+				.agentLastLocationUpdatedAt(assignedAgentProfile != null ? assignedAgentProfile.getLastLocationUpdateAt() : null)
+				.build();
 	}
 
 	@Transactional(readOnly = true)
@@ -129,10 +215,13 @@ public class ManagerLoanService {
 			throw new IllegalArgumentException("Manager decision cannot be PENDING");
 		}
 
+		requireManagerApprovalPreconditions(application, review);
+
 		Users assignedAgent = resolveAgentForApproval(managerProfile, application, request.getAgentUserId());
 		application.setAssignedAgent(assignedAgent);
 		application.setStatus(LoanStatus.APPROVED);
 		loanApplicationRepository.save(application);
+		ensureVerificationTask(application, assignedAgent, managerUser);
 		loanReviewRepository.save(review);
 		recordAssignmentAudit(application, managerUser, "LOAN_AGENT_ASSIGNED",
 				"Loan approved with assigned agent", "APPROVED");
@@ -173,6 +262,7 @@ public class ManagerLoanService {
 		application.setDisbursedAt(java.time.LocalDateTime.now());
 		application.setStatus(LoanStatus.DISBURSED);
 		loanApplicationRepository.save(application);
+		ensureCashCollectionTask(application, application.getAssignedAgent(), managerUser);
 
 		return toResponse(application, loan);
 	}
@@ -191,6 +281,7 @@ public class ManagerLoanService {
 		Users assignedAgent = validateAndResolveRequestedAgent(managerProfile, request.getAgentUserId());
 		application.setAssignedAgent(assignedAgent);
 		loanApplicationRepository.save(application);
+		ensureVerificationTask(application, assignedAgent, managerUser);
 
 		loanRepository.findByLoanApplicationId(application.getId()).ifPresent(loan -> {
 			loan.setVerifiedByAgent(assignedAgent);
@@ -227,6 +318,7 @@ public class ManagerLoanService {
 
 		application.setAssignedAgent(newAgent);
 		loanApplicationRepository.save(application);
+		ensureVerificationTask(application, newAgent, managerUser);
 
 		loanRepository.findByLoanApplicationId(application.getId()).ifPresent(loan -> {
 			loan.setVerifiedByAgent(newAgent);
@@ -417,5 +509,95 @@ public class ManagerLoanService {
 				.disbursalBankAccount(application.getDisbursalBankAccount())
 				.disbursalIfscCode(application.getDisbursalIfscCode())
 				.build();
+	}
+
+	private void requireManagerApprovalPreconditions(LoanApplication application, LoanReview review) {
+		if (review.getDecision() != ReviewDecision.APPROVED) {
+			throw new IllegalArgumentException("Manager approval allowed only after officer APPROVED decision");
+		}
+
+		if (application.getAssignedAgent() == null) {
+			throw new IllegalArgumentException("Assign agent and complete verification before manager approval");
+		}
+
+		AgentTask verificationTask = agentTaskRepository
+				.findTopByLoanApplicationIdAndTaskTypeOrderByCreatedAtDesc(application.getId(), AgentTaskType.VERIFICATION)
+				.orElseThrow(() -> new IllegalArgumentException("No verification task found for this loan application"));
+
+		if (verificationTask.getTaskStatus() != TaskStatus.COMPLETED) {
+			throw new IllegalArgumentException("Verification task is not completed yet");
+		}
+
+		VerificationReport report = verificationReportRepository.findByTaskId(verificationTask.getId())
+				.orElseThrow(() -> new IllegalArgumentException("Verification report not found for completed verification task"));
+
+		if (!Boolean.TRUE.equals(report.getIsSubmitted())) {
+			throw new IllegalArgumentException("Verification report is not submitted yet");
+		}
+
+		if (report.getVerificationStatus() != VerificationStatus.VERIFIED) {
+			throw new IllegalArgumentException("Manager cannot approve because verification status is " + report.getVerificationStatus());
+		}
+	}
+
+	private void ensureVerificationTask(LoanApplication application, Users assignedAgent, Users assignedBy) {
+		if (application.getId() == null || assignedAgent == null) {
+			return;
+		}
+
+		boolean alreadyOpen = agentTaskRepository.existsByLoanApplicationIdAndAgentIdAndTaskTypeAndTaskStatusIn(
+				application.getId(),
+				assignedAgent.getId(),
+				AgentTaskType.VERIFICATION,
+				List.of(TaskStatus.ASSIGNED, TaskStatus.ACCEPTED, TaskStatus.IN_PROGRESS)
+		);
+		if (alreadyOpen) {
+			return;
+		}
+
+		AgentTask task = AgentTask.builder()
+				.taskCode("TSK-VER-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
+						+ "-" + UUID.randomUUID().toString().substring(0, 5).toUpperCase())
+				.loanApplication(application)
+				.agent(assignedAgent)
+				.assignedBy(assignedBy)
+				.taskType(AgentTaskType.VERIFICATION)
+				.taskStatus(TaskStatus.ASSIGNED)
+				.taskDescription("Field verification for applicant residence, documents, and repayment capacity.")
+				.priorityLevel("HIGH")
+				.deadline(LocalDateTime.now().plusHours(48))
+				.build();
+		agentTaskRepository.save(task);
+	}
+
+	private void ensureCashCollectionTask(LoanApplication application, Users assignedAgent, Users assignedBy) {
+		if (application.getId() == null || assignedAgent == null) {
+			return;
+		}
+
+		boolean alreadyOpen = agentTaskRepository.existsByLoanApplicationIdAndAgentIdAndTaskTypeAndTaskStatusIn(
+				application.getId(),
+				assignedAgent.getId(),
+				AgentTaskType.CASH_COLLECTION,
+				List.of(TaskStatus.ASSIGNED, TaskStatus.ACCEPTED, TaskStatus.IN_PROGRESS)
+		);
+		if (alreadyOpen) {
+			return;
+		}
+
+		AgentTask task = AgentTask.builder()
+				.taskCode("TSK-COL-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
+						+ "-" + UUID.randomUUID().toString().substring(0, 5).toUpperCase())
+				.loanApplication(application)
+				.agent(assignedAgent)
+				.assignedBy(assignedBy)
+				.taskType(AgentTaskType.CASH_COLLECTION)
+				.taskStatus(TaskStatus.ASSIGNED)
+				.taskDescription("Collect EMI installments from borrower as per schedule.")
+				.priorityLevel("MEDIUM")
+				.deadline(LocalDateTime.now().plusHours(72))
+				.otpRequired(true)
+				.build();
+		agentTaskRepository.save(task);
 	}
 }

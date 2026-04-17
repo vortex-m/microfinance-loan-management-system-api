@@ -72,4 +72,10 @@ public class ManagerController {
 		return ApiResponse.success("Manager dashboard fetched successfully", managerService.getDashboard(authentication));
 	}
 
+	@PreAuthorize("hasRole('MANAGER')")
+	@GetMapping("/dashboard/summary")
+	public ApiResponse<DashboardResponse> getDashboardSummary(Authentication authentication) {
+		return ApiResponse.success("Manager dashboard summary fetched successfully", managerService.getDashboard(authentication));
+	}
+
 }

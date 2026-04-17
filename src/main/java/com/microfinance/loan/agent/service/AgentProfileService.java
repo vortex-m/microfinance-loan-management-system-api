@@ -1,11 +1,14 @@
 package com.microfinance.loan.agent.service;
 
 import com.microfinance.loan.agent.dto.request.AgentProfileUpdateRequest;
+import com.microfinance.loan.common.enums.CashSettlementStatus;
+import com.microfinance.loan.common.enums.AgentAvailability;
 import com.microfinance.loan.agent.dto.response.AgentProfileResponse;
 import com.microfinance.loan.agent.entity.AgentProfile;
 import com.microfinance.loan.agent.repository.AgentProfileRepository;
 import com.microfinance.loan.common.entity.Users;
 import com.microfinance.loan.common.enums.Role;
+import com.microfinance.loan.payment.repository.TransactionRepository;
 import com.microfinance.loan.common.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,10 +19,14 @@ public class AgentProfileService {
 
 	private final AgentProfileRepository agentProfileRepository;
 	private final UserRepository userRepository;
+	private final TransactionRepository transactionRepository;
 
-	public AgentProfileService(AgentProfileRepository agentProfileRepository, UserRepository userRepository) {
+	public AgentProfileService(AgentProfileRepository agentProfileRepository,
+							   UserRepository userRepository,
+							   TransactionRepository transactionRepository) {
 		this.agentProfileRepository = agentProfileRepository;
 		this.userRepository = userRepository;
+		this.transactionRepository = transactionRepository;
 	}
 
 	@Transactional
@@ -54,6 +61,41 @@ public class AgentProfileService {
 		return mapToResponse(savedProfile, user);
 	}
 
+	@Transactional(readOnly = true)
+	public AgentProfileResponse getMyProfile(Long userId) {
+		Users user = userRepository.findById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+		AgentProfile profile = getAgentProfile(userId);
+		return mapToResponse(profile, user);
+	}
+
+	@Transactional
+	public AgentProfileResponse updateAvailability(Long userId, AgentAvailability availability) {
+		Users user = userRepository.findById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+		AgentProfile profile = getAgentProfile(userId);
+		profile.setAgentAvailability(availability);
+		AgentProfile saved = agentProfileRepository.save(profile);
+		return mapToResponse(saved, user);
+	}
+
+	@Transactional
+	public AgentProfileResponse updateLocation(Long userId, Double latitude, Double longitude) {
+		Users user = userRepository.findById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+		AgentProfile profile = getAgentProfile(userId);
+		profile.setLastLatitude(latitude);
+		profile.setLastLongitude(longitude);
+		profile.setLastLocationUpdateAt(java.time.LocalDateTime.now());
+		AgentProfile saved = agentProfileRepository.save(profile);
+		return mapToResponse(saved, user);
+	}
+
+	private AgentProfile getAgentProfile(Long userId) {
+		return agentProfileRepository.findByUsersId(userId)
+				.orElseThrow(() -> new IllegalArgumentException("Agent profile not found for user: " + userId));
+	}
+
 	private boolean isOnboardingComplete(AgentProfile profile) {
 		return StringUtils.hasText(profile.getFatherName())
 				&& StringUtils.hasText(profile.getMotherName())
@@ -72,6 +114,11 @@ public class AgentProfileService {
 		String branchName = profile.getBranchProfile() != null ? profile.getBranchProfile().getBranchName() : profile.getBranch();
 		String branchCode = profile.getBranchProfile() != null ? profile.getBranchProfile().getBranchCode() : profile.getBranchCode();
 		String regionCode = profile.getBranchProfile() != null ? profile.getBranchProfile().getRegionCode() : null;
+
+		double collected = safeAmount(transactionRepository.sumCashAmountByAgentAndSettlementStatus(
+				user.getId(), CashSettlementStatus.COLLECTED_UNSETTLED));
+		double settled = safeAmount(transactionRepository.sumCashAmountByAgentAndSettlementStatus(
+				user.getId(), CashSettlementStatus.SETTLED));
 
 		return AgentProfileResponse.builder()
 				.userId(user.getId())
@@ -98,6 +145,17 @@ public class AgentProfileService {
 				.pincode(profile.getPincode())
 				.agentStatus(profile.getAgentStatus())
 				.agentAvailability(profile.getAgentAvailability())
+				.totalCollectedCash(round(collected + settled))
+				.totalSettledCash(round(settled))
+				.totalUnsettledCash(round(collected))
 				.build();
+	}
+
+	private double safeAmount(Double amount) {
+		return amount == null ? 0d : amount;
+	}
+
+	private double round(double value) {
+		return Math.round(value * 100d) / 100d;
 	}
 }

@@ -4,14 +4,19 @@ import com.microfinance.loan.agent.dto.request.CashDisbursalOtpGenerateRequest;
 import com.microfinance.loan.agent.dto.request.CashDisbursalOtpVerifyRequest;
 import com.microfinance.loan.agent.dto.request.CashOtpRequest;
 import com.microfinance.loan.agent.dto.request.CashOtpVerifyRequest;
+import com.microfinance.loan.agent.dto.response.AgentTaskResponse;
 import com.microfinance.loan.agent.dto.response.CashDisbursalOtpResponse;
 import com.microfinance.loan.agent.dto.response.CashOtpResponse;
+import com.microfinance.loan.agent.entity.AgentTask;
 import com.microfinance.loan.agent.entity.CashCollectionOtp;
+import com.microfinance.loan.agent.repository.AgentTaskRepository;
 import com.microfinance.loan.agent.repository.CashCollectionOtpRepository;
+import com.microfinance.loan.common.enums.AgentTaskType;
 import com.microfinance.loan.common.enums.CashOtpStatus;
 import com.microfinance.loan.common.enums.DisbursalMode;
 import com.microfinance.loan.common.enums.LoanStatus;
 import com.microfinance.loan.common.enums.PaymentStatus;
+import com.microfinance.loan.common.enums.TaskStatus;
 import com.microfinance.loan.common.service.MailService;
 import com.microfinance.loan.loan.entity.Loan;
 import com.microfinance.loan.loan.entity.LoanEmiSchedule;
@@ -28,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -36,7 +42,9 @@ import java.util.concurrent.ThreadLocalRandom;
 public class AgentTaskService {
 
     private static final int OTP_MAX_ATTEMPTS = 3;
+    private static final double EPSILON = 0.0001d;
 
+    private final AgentTaskRepository agentTaskRepository;
     private final LoanApplicationRepository loanApplicationRepository;
     private final LoanRepository loanRepository;
     private final LoanEmiScheduleRepository loanEmiScheduleRepository;
@@ -46,7 +54,8 @@ public class AgentTaskService {
     private final PasswordEncoder passwordEncoder;
     private final MailService mailService;
 
-    public AgentTaskService(LoanApplicationRepository loanApplicationRepository,
+    public AgentTaskService(AgentTaskRepository agentTaskRepository,
+                            LoanApplicationRepository loanApplicationRepository,
                             LoanRepository loanRepository,
                             LoanEmiScheduleRepository loanEmiScheduleRepository,
                             CashCollectionOtpRepository cashCollectionOtpRepository,
@@ -54,6 +63,7 @@ public class AgentTaskService {
                             LoanService loanService,
                             PasswordEncoder passwordEncoder,
                             MailService mailService) {
+        this.agentTaskRepository = agentTaskRepository;
         this.loanApplicationRepository = loanApplicationRepository;
         this.loanRepository = loanRepository;
         this.loanEmiScheduleRepository = loanEmiScheduleRepository;
@@ -62,6 +72,71 @@ public class AgentTaskService {
         this.loanService = loanService;
         this.passwordEncoder = passwordEncoder;
         this.mailService = mailService;
+    }
+
+    @Transactional(readOnly = true)
+    public List<AgentTaskResponse> listMyTasks(Long agentId, TaskStatus taskStatus, AgentTaskType taskType) {
+        List<AgentTask> tasks;
+        if (taskStatus != null && taskType != null) {
+            tasks = agentTaskRepository.findByAgentIdAndTaskStatusAndTaskTypeOrderByCreatedAtDesc(agentId, taskStatus, taskType);
+        } else if (taskStatus != null) {
+            tasks = agentTaskRepository.findByAgentIdAndTaskStatusOrderByCreatedAtDesc(agentId, taskStatus);
+        } else if (taskType != null) {
+            tasks = agentTaskRepository.findByAgentIdAndTaskTypeOrderByCreatedAtDesc(agentId, taskType);
+        } else {
+            tasks = agentTaskRepository.findByAgentIdOrderByCreatedAtDesc(agentId);
+        }
+        return tasks.stream().map(this::toTaskResponse).toList();
+    }
+
+    @Transactional
+    public AgentTaskResponse acceptTask(Long agentId, Long taskId) {
+        AgentTask task = getAgentTask(taskId, agentId);
+        if (task.getTaskStatus() != TaskStatus.ASSIGNED) {
+            throw new IllegalArgumentException("Only ASSIGNED tasks can be accepted");
+        }
+        task.setTaskStatus(TaskStatus.ACCEPTED);
+        task.setAcceptedAt(LocalDateTime.now());
+        return toTaskResponse(agentTaskRepository.save(task));
+    }
+
+    @Transactional
+    public AgentTaskResponse startTask(Long agentId, Long taskId) {
+        AgentTask task = getAgentTask(taskId, agentId);
+        if (task.getTaskStatus() != TaskStatus.ACCEPTED && task.getTaskStatus() != TaskStatus.ASSIGNED) {
+            throw new IllegalArgumentException("Only ASSIGNED or ACCEPTED tasks can be started");
+        }
+        if (task.getAcceptedAt() == null) {
+            task.setAcceptedAt(LocalDateTime.now());
+        }
+        task.setTaskStatus(TaskStatus.IN_PROGRESS);
+        task.setStartedAt(LocalDateTime.now());
+        return toTaskResponse(agentTaskRepository.save(task));
+    }
+
+    @Transactional
+    public AgentTaskResponse completeTask(Long agentId, Long taskId) {
+        AgentTask task = getAgentTask(taskId, agentId);
+        if (task.getTaskStatus() != TaskStatus.IN_PROGRESS) {
+            throw new IllegalArgumentException("Only IN_PROGRESS tasks can be completed");
+        }
+        task.setTaskStatus(TaskStatus.COMPLETED);
+        task.setCompletedAt(LocalDateTime.now());
+        return toTaskResponse(agentTaskRepository.save(task));
+    }
+
+    @Transactional
+    public AgentTaskResponse declineTask(Long agentId, Long taskId, String reason) {
+        AgentTask task = getAgentTask(taskId, agentId);
+        if (task.getTaskStatus() != TaskStatus.ASSIGNED && task.getTaskStatus() != TaskStatus.ACCEPTED) {
+            throw new IllegalArgumentException("Only ASSIGNED or ACCEPTED tasks can be declined");
+        }
+        if (reason == null || reason.trim().isEmpty()) {
+            throw new IllegalArgumentException("Decline reason is required");
+        }
+        task.setTaskStatus(TaskStatus.DECLINED);
+        task.setDeclineReason(reason.trim());
+        return toTaskResponse(agentTaskRepository.save(task));
     }
 
     @Transactional
@@ -128,6 +203,7 @@ public class AgentTaskService {
             Loan bookedLoan = loanRepository.findByLoanApplicationId(application.getId())
                     .orElseThrow(() -> new IllegalArgumentException("Booked loan not found for application: " + application.getId()));
             loanService.markCashDisbursed(bookedLoan, application.getAssignedAgent());
+            ensureCashCollectionTask(application, application.getAssignedAgent());
 
             return CashDisbursalOtpResponse.builder()
                     .loanApplicationId(application.getId())
@@ -166,11 +242,14 @@ public class AgentTaskService {
         Loan loan = loanRepository.findById(request.getLoanId())
                 .orElseThrow(() -> new IllegalArgumentException("Loan not found: " + request.getLoanId()));
 
+        AgentTask task = getAgentTask(request.getTaskId(), agentId);
+        validateCashCollectionTask(task, loan);
+
         if (loan.getVerifiedByAgent() == null || !loan.getVerifiedByAgent().getId().equals(agentId)) {
             throw new IllegalArgumentException("Loan is not assigned to this agent for collection");
         }
-            if (loan.getLoanStatus() != LoanStatus.DISBURSED) {
-              throw new IllegalArgumentException("Collection is allowed only after loan is DISBURSED");
+        if (loan.getLoanStatus() != LoanStatus.DISBURSED) {
+            throw new IllegalArgumentException("Collection is allowed only after loan is DISBURSED");
         }
 
         LoanEmiSchedule emi = loanEmiScheduleRepository.findById(request.getEmiScheduleId())
@@ -182,19 +261,40 @@ public class AgentTaskService {
             throw new IllegalArgumentException("EMI is already paid");
         }
 
+        double dueAmount = getOutstandingDueAmount(emi);
+        if (request.getCollectionAmount() > dueAmount + EPSILON) {
+            throw new IllegalArgumentException("Collection amount cannot exceed outstanding EMI due amount");
+        }
+
         String otp = String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1_000_000));
         CashCollectionOtp otpRecord = CashCollectionOtp.builder()
                 .loan(loan)
                 .emiSchedule(emi)
                 .user(loan.getUser())
                 .agent(loan.getVerifiedByAgent())
+                .task(task)
                 .otpHash(passwordEncoder.encode(otp))
+                .requestedCollectionAmount(round(request.getCollectionAmount()))
                 .otpStatus(CashOtpStatus.ACTIVE)
                 .attemptCount(0)
                 .maxAttempts(OTP_MAX_ATTEMPTS)
                 .expiresAt(LocalDateTime.now().plusMinutes(10))
                 .build();
         CashCollectionOtp savedOtp = cashCollectionOtpRepository.save(otpRecord);
+
+        task.setOtpRequired(true);
+        task.setOtpRequestedAt(LocalDateTime.now());
+        task.setCollectionPlannedAt(request.getCollectionPlannedAt());
+        task.setCollectionStartedAt(LocalDateTime.now());
+        task.setCollectionStartedLat(request.getAgentLatitude());
+        task.setCollectionStartedLng(request.getAgentLongitude());
+        if (task.getTaskStatus() == TaskStatus.ASSIGNED || task.getTaskStatus() == TaskStatus.ACCEPTED) {
+            task.setTaskStatus(TaskStatus.IN_PROGRESS);
+            if (task.getStartedAt() == null) {
+                task.setStartedAt(LocalDateTime.now());
+            }
+        }
+        agentTaskRepository.save(task);
 
         if (loan.getUser().getEmail() != null) {
             mailService.sendCashDisbursalOtp(
@@ -217,8 +317,16 @@ public class AgentTaskService {
 
     @Transactional
     public CashOtpResponse verifyCollectionOtp(Long agentId, CashOtpVerifyRequest request) {
-        CashCollectionOtp otpRecord = cashCollectionOtpRepository.findByIdAndAgentId(request.getOtpId(), agentId)
+        CashCollectionOtp otpRecord = cashCollectionOtpRepository
+                .findByIdAndAgentIdAndTaskId(request.getOtpId(), agentId, request.getTaskId())
                 .orElseThrow(() -> new IllegalArgumentException("Collection OTP record not found for this agent"));
+
+        AgentTask task = getAgentTask(request.getTaskId(), agentId);
+        validateCashCollectionTask(task, otpRecord.getLoan());
+
+        if (otpRecord.getTask() == null || !otpRecord.getTask().getId().equals(task.getId())) {
+            throw new IllegalArgumentException("OTP does not belong to the provided task");
+        }
 
         if (otpRecord.getOtpStatus() != CashOtpStatus.ACTIVE) {
             throw new IllegalArgumentException("OTP is not active");
@@ -249,8 +357,23 @@ public class AgentTaskService {
         LoanEmiSchedule emi = otpRecord.getEmiSchedule();
         Loan loan = otpRecord.getLoan();
 
+        double requestedAmount = round(request.getCollectionAmount());
+        if (Math.abs(requestedAmount - safe(otpRecord.getRequestedCollectionAmount())) > EPSILON) {
+            throw new IllegalArgumentException("Collection amount mismatch with OTP request");
+        }
+
+        double dueAmount = getOutstandingDueAmount(emi);
+        if (requestedAmount > dueAmount + EPSILON) {
+            throw new IllegalArgumentException("Collection amount cannot exceed outstanding EMI due amount");
+        }
+
         String paymentReference = "CASH-EMI-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
                 + "-" + UUID.randomUUID().toString().substring(0, 5).toUpperCase();
+
+        double ratio = dueAmount <= EPSILON ? 0d : (requestedAmount / dueAmount);
+        double principalPaid = round(safe(emi.getPrincipalComponent()) * ratio);
+        double interestPaid = round(safe(emi.getInterestComponent()) * ratio);
+        double penaltyPaid = round(safe(emi.getPenaltyAmount()) * ratio);
 
         Payment payment = Payment.builder()
                 .paymentNumber("PAY-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
@@ -258,10 +381,10 @@ public class AgentTaskService {
                 .loan(loan)
                 .emiSchedule(emi)
                 .user(loan.getUser())
-                .totalPaidAmount(emi.getEmiAmount() + safe(emi.getPenaltyAmount()))
-                .principalPaid(emi.getPrincipalComponent())
-                .interestPaid(emi.getInterestComponent())
-                .penaltyPaid(safe(emi.getPenaltyAmount()))
+                .totalPaidAmount(requestedAmount)
+                .principalPaid(principalPaid)
+                .interestPaid(interestPaid)
+                .penaltyPaid(penaltyPaid)
                 .paymentMode("CASH")
                 .paymentReference(paymentReference)
                 .paymentStatus(PaymentStatus.SUCCESS)
@@ -273,17 +396,35 @@ public class AgentTaskService {
                 .build();
         transactionRepository.save(payment);
 
-        emi.setEmiStatus("PAID");
-        emi.setPaidAmount(payment.getTotalPaidAmount());
-        emi.setPaidDate(LocalDateTime.now().toLocalDate());
+        double updatedPartialPaid = round(safe(emi.getPartialPaidAmount()) + requestedAmount);
+        if (updatedPartialPaid + EPSILON >= (safe(emi.getEmiAmount()) + safe(emi.getPenaltyAmount()))) {
+            emi.setEmiStatus("PAID");
+            emi.setPaidAmount(round(safe(emi.getEmiAmount()) + safe(emi.getPenaltyAmount())));
+            emi.setPaidDate(LocalDateTime.now().toLocalDate());
+            emi.setRemainingAmount(0d);
+        } else {
+            emi.setEmiStatus("PARTIALLY_PAID");
+            emi.setPaidAmount(0d);
+            emi.setRemainingAmount(round((safe(emi.getEmiAmount()) + safe(emi.getPenaltyAmount())) - updatedPartialPaid));
+        }
+        emi.setPartialPaidAmount(updatedPartialPaid);
         emi.setPaymentReference(paymentReference);
-        emi.setRemainingAmount(0d);
         loanEmiScheduleRepository.save(emi);
 
         syncLoanAfterCollection(loan);
 
+        task.setOtpVerified(true);
+        task.setOtpVerifiedAt(LocalDateTime.now());
+        task.setCollectionVerifiedAt(LocalDateTime.now());
+        task.setCollectionVerifiedLat(request.getAgentLatitude());
+        task.setCollectionVerifiedLng(request.getAgentLongitude());
+        task.setTaskStatus(TaskStatus.COMPLETED);
+        task.setCompletedAt(LocalDateTime.now());
+        agentTaskRepository.save(task);
+
         return CashOtpResponse.builder()
                 .otpId(otpRecord.getId())
+                .taskId(task.getId())
                 .otpStatus(otpRecord.getOtpStatus())
                 .expiresAt(otpRecord.getExpiresAt())
                 .attemptCount(otpRecord.getAttemptCount())
@@ -318,5 +459,91 @@ public class AgentTaskService {
 
     private double safe(Double value) {
         return value == null ? 0d : value;
+    }
+
+    private double round(double value) {
+        return Math.round(value * 100d) / 100d;
+    }
+
+    private double getOutstandingDueAmount(LoanEmiSchedule emi) {
+        double fullDue = safe(emi.getEmiAmount()) + safe(emi.getPenaltyAmount());
+        return round(Math.max(0d, fullDue - safe(emi.getPartialPaidAmount())));
+    }
+
+    private AgentTask getAgentTask(Long taskId, Long agentId) {
+        return agentTaskRepository.findByIdAndAgentId(taskId, agentId)
+                .orElseThrow(() -> new IllegalArgumentException("Task not found for this agent: " + taskId));
+    }
+
+    private void validateCashCollectionTask(AgentTask task, Loan loan) {
+        if (task.getTaskType() != AgentTaskType.CASH_COLLECTION) {
+            throw new IllegalArgumentException("Task is not of CASH_COLLECTION type");
+        }
+        if (task.getLoanApplication() == null || loan.getLoanApplication() == null
+                || !task.getLoanApplication().getId().equals(loan.getLoanApplication().getId())) {
+            throw new IllegalArgumentException("Task does not belong to this loan application");
+        }
+        if (task.getTaskStatus() == TaskStatus.DECLINED || task.getTaskStatus() == TaskStatus.COMPLETED) {
+            throw new IllegalArgumentException("Task is not active: " + task.getTaskStatus());
+        }
+    }
+
+    private AgentTaskResponse toTaskResponse(AgentTask task) {
+        return AgentTaskResponse.builder()
+                .taskId(task.getId())
+                .taskCode(task.getTaskCode())
+                .loanApplicationId(task.getLoanApplication() != null ? task.getLoanApplication().getId() : null)
+                .applicationNumber(task.getLoanApplication() != null ? task.getLoanApplication().getApplicationNumber() : null)
+                .taskType(task.getTaskType())
+                .taskStatus(task.getTaskStatus())
+                .taskDescription(task.getTaskDescription())
+                .priorityLevel(task.getPriorityLevel())
+                .otpRequired(task.getOtpRequired())
+                .otpVerified(task.getOtpVerified())
+                .otpRequestedAt(task.getOtpRequestedAt())
+                .otpVerifiedAt(task.getOtpVerifiedAt())
+                .deadline(task.getDeadline())
+                .acceptedAt(task.getAcceptedAt())
+                .startedAt(task.getStartedAt())
+                .completedAt(task.getCompletedAt())
+                .collectionPlannedAt(task.getCollectionPlannedAt())
+                .collectionStartedAt(task.getCollectionStartedAt())
+                .collectionStartedLat(task.getCollectionStartedLat())
+                .collectionStartedLng(task.getCollectionStartedLng())
+                .collectionVerifiedAt(task.getCollectionVerifiedAt())
+                .collectionVerifiedLat(task.getCollectionVerifiedLat())
+                .collectionVerifiedLng(task.getCollectionVerifiedLng())
+                .build();
+    }
+
+    private void ensureCashCollectionTask(LoanApplication application, com.microfinance.loan.common.entity.Users assignedAgent) {
+        if (application == null || application.getId() == null || assignedAgent == null) {
+            return;
+        }
+
+        boolean alreadyOpen = agentTaskRepository.existsByLoanApplicationIdAndAgentIdAndTaskTypeAndTaskStatusIn(
+                application.getId(),
+                assignedAgent.getId(),
+                AgentTaskType.CASH_COLLECTION,
+                Arrays.asList(TaskStatus.ASSIGNED, TaskStatus.ACCEPTED, TaskStatus.IN_PROGRESS)
+        );
+        if (alreadyOpen) {
+            return;
+        }
+
+        AgentTask task = AgentTask.builder()
+                .taskCode("TSK-COL-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
+                        + "-" + UUID.randomUUID().toString().substring(0, 5).toUpperCase())
+                .loanApplication(application)
+                .agent(assignedAgent)
+                .assignedBy(assignedAgent)
+                .taskType(AgentTaskType.CASH_COLLECTION)
+                .taskStatus(TaskStatus.ASSIGNED)
+                .taskDescription("Collect EMI installments from borrower as per schedule.")
+                .priorityLevel("MEDIUM")
+                .deadline(LocalDateTime.now().plusHours(72))
+                .otpRequired(true)
+                .build();
+        agentTaskRepository.save(task);
     }
 }

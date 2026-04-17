@@ -38,8 +38,15 @@ public class CashCollectionOtp {
     @JoinColumn(name = "agent_id", nullable = false)
     private Users agent;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "task_id", nullable = false)
+    private AgentTask task;
+
     @Column(nullable = false)
     private String otpHash;
+
+    @Column(nullable = false)
+    private Double requestedCollectionAmount;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

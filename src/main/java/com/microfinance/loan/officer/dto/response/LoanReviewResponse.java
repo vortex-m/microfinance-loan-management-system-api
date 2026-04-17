@@ -2,6 +2,8 @@ package com.microfinance.loan.officer.dto.response;
 
 import com.microfinance.loan.common.enums.DisbursalMode;
 import com.microfinance.loan.common.enums.LoanStatus;
+import com.microfinance.loan.common.enums.TaskStatus;
+import com.microfinance.loan.common.enums.VerificationStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -29,4 +31,7 @@ public class LoanReviewResponse {
 	private String disbursalIfscCode;
 	private LoanStatus status;
 	private LocalDateTime appliedAt;
+	private TaskStatus verificationTaskStatus;
+	private VerificationStatus verificationStatus;
+	private Boolean verificationEvidenceAvailable;
 }

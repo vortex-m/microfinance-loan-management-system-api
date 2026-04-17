@@ -1,5 +1,6 @@
 package com.microfinance.loan.agent.dto.response;
 
+import com.microfinance.loan.common.enums.VerificationStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,6 +21,8 @@ public class VerificationReportResponse {
 	private String reportSummary;
 	private Boolean documentsMatched;
 	private Boolean applicantAvailable;
+	private VerificationStatus verificationStatus;
+	private Integer imageCount;
 
 	private Double cashCollectedAmount;
 	private String cashCollectionRemarks;

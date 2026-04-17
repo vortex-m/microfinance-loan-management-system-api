@@ -2,6 +2,7 @@ package com.microfinance.loan.payment.entity;
 
 import com.microfinance.loan.agent.entity.CashCollectionOtp;
 import com.microfinance.loan.common.entity.Users;
+import com.microfinance.loan.common.enums.CashSettlementStatus;
 import com.microfinance.loan.common.enums.PaymentStatus;
 import com.microfinance.loan.loan.entity.Loan;
 import com.microfinance.loan.loan.entity.LoanEmiSchedule;
@@ -87,6 +88,18 @@ public class Payment {
 
     private LocalDateTime verifiedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private CashSettlementStatus settlementStatus;
+
+    private String settlementReference;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "settled_by_user_id")
+    private Users settledBy;
+
+    private LocalDateTime settledAt;
+
     @Column(updatable = false)
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -99,6 +112,11 @@ public class Payment {
         this.initiatedAt = LocalDateTime.now();
         this.excessAmount = 0.0;
         this.penaltyPaid = 0.0;
+        if (this.settlementStatus == null) {
+            this.settlementStatus = "CASH".equalsIgnoreCase(this.paymentMode)
+                    ? CashSettlementStatus.COLLECTED_UNSETTLED
+                    : CashSettlementStatus.SETTLED;
+        }
     }
 
     @PreUpdate

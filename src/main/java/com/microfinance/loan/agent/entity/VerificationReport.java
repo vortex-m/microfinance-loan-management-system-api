@@ -25,6 +25,10 @@ public class VerificationReport {
     private String reportCode;          // e.g. VR-00123
 
     @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "task_id", nullable = false, unique = true)
+    private AgentTask task;
+
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "loan_application_id", nullable = false, unique = true)
     private LoanApplication loanApplication;
 
@@ -52,6 +56,10 @@ public class VerificationReport {
     private String agentRemarks;
     private String environmentObservation;  // neighbourhood, living conditions
     private String businessObservation;     // if applicable
+
+    // Collection details when report is submitted for CASH_COLLECTION tasks.
+    private Double cashCollectedAmount;
+    private String cashCollectionRemarks;
 
     // Risk flags by agent
     private Boolean addressMismatch;

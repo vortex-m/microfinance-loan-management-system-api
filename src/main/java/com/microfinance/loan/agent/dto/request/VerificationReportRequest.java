@@ -25,6 +25,13 @@ public class VerificationReportRequest {
 	private String businessRemarks;
 	private Boolean documentsMatched;
 	private Boolean applicantAvailable;
+	private Boolean addressVerified;
+	private Boolean incomeVerified;
+	private Boolean suspiciousActivity;
+	private String riskNotes;
+	private Double visitLatitude;
+	private Double visitLongitude;
+	private String visitAddress;
 
 	// Used when the task type is CASH_COLLECTION.
 	@DecimalMin(value = "0.0", inclusive = false, message = "Collected amount must be greater than 0")

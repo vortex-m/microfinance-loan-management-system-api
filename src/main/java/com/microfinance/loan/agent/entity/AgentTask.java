@@ -63,6 +63,15 @@ public class AgentTask {
     private LocalDateTime otpRequestedAt;
     private LocalDateTime otpVerifiedAt;
 
+    // Cash-collection traceability: planned time and geotagged checkpoints.
+    private LocalDateTime collectionPlannedAt;
+    private LocalDateTime collectionStartedAt;
+    private Double collectionStartedLat;
+    private Double collectionStartedLng;
+    private LocalDateTime collectionVerifiedAt;
+    private Double collectionVerifiedLat;
+    private Double collectionVerifiedLng;
+
     // Decline Info
     private String declineReason;
 

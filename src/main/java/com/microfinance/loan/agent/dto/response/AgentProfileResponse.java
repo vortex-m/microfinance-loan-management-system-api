@@ -43,4 +43,7 @@ public class AgentProfileResponse {
 
 	private AgentStatus agentStatus;
 	private AgentAvailability agentAvailability;
+	private Double totalCollectedCash;
+	private Double totalSettledCash;
+	private Double totalUnsettledCash;
 }

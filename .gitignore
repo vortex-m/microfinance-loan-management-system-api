@@ -37,3 +37,4 @@ src/main/resources/application-prod.yml
 .vscode/
 
 upload/
+PROJECT_INSTRUCTIONS.md/

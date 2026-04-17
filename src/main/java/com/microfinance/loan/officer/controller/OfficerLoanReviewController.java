@@ -4,6 +4,7 @@ import com.microfinance.loan.common.dto.ApiResponse;
 import com.microfinance.loan.manager.dto.request.LoanAgentAssignmentRequest;
 import com.microfinance.loan.officer.dto.request.LoanDecisionRequest;
 import com.microfinance.loan.officer.dto.response.LoanReviewResponse;
+import com.microfinance.loan.officer.dto.response.VerificationEvidenceResponse;
 import com.microfinance.loan.officer.service.OfficerLoanReviewService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -55,6 +56,16 @@ public class OfficerLoanReviewController {
 		return ApiResponse.success(
 				"Agent assigned successfully",
 				officerLoanReviewService.assignAgent(authentication, loanApplicationId, request)
+		);
+	}
+
+	@PreAuthorize("hasRole('OFFICER')")
+	@GetMapping("/{loanApplicationId}/verification-evidence")
+	public ApiResponse<VerificationEvidenceResponse> getVerificationEvidence(Authentication authentication,
+												@PathVariable Long loanApplicationId) {
+		return ApiResponse.success(
+				"Verification evidence fetched successfully",
+				officerLoanReviewService.getVerificationEvidence(authentication, loanApplicationId)
 		);
 	}
 }

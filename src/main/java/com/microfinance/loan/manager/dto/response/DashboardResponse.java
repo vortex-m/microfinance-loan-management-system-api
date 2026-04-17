@@ -14,7 +14,13 @@ public class DashboardResponse {
     private Integer pendingManagerApproval;
     private Integer approvedLoans;
     private Integer disbursedLoans;
+    private Integer rejectedLoans;
+    private Integer closedLoans;
     private Integer activeUsers;
     private Integer activeOfficers;
     private Integer activeAgents;
+    private Double totalPortfolioAmount;
+    private Double totalCollectedCash;
+    private Double totalSettledCash;
+    private Double totalUnsettledCash;
 }

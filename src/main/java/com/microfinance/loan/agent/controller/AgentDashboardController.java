@@ -24,4 +24,10 @@ public class AgentDashboardController {
 	public ApiResponse<AgentDashboardResponse> getDashboard(Authentication authentication) {
 		return ApiResponse.success("Agent dashboard fetched successfully", agentDashboardService.getDashboard(authentication));
 	}
+
+	@PreAuthorize("hasRole('AGENT')")
+	@GetMapping("/summary")
+	public ApiResponse<AgentDashboardResponse> getDashboardSummary(Authentication authentication) {
+		return ApiResponse.success("Agent dashboard summary fetched successfully", agentDashboardService.getDashboard(authentication));
+	}
 }

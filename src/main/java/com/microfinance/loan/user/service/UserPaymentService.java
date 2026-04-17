@@ -23,6 +23,8 @@ import java.util.UUID;
 @Service
 public class UserPaymentService {
 
+	private static final double EPSILON = 0.0001d;
+
 	private final LoanRepository loanRepository;
 	private final LoanEmiScheduleRepository loanEmiScheduleRepository;
 	private final TransactionRepository transactionRepository;
@@ -61,11 +63,12 @@ public class UserPaymentService {
 		}
 
 		double payAmount = request.getPaymentAmount();
-		double dueAmount = emi.getEmiAmount() + safe(emi.getPenaltyAmount());
+		double dueAmount = round(Math.max(0d,
+				safe(emi.getEmiAmount()) + safe(emi.getPenaltyAmount()) - safe(emi.getPartialPaidAmount())));
 		if (payAmount <= 0) {
 			throw new IllegalArgumentException("Payment amount must be greater than zero");
 		}
-		if (payAmount > dueAmount + 0.0001d) {
+		if (payAmount > dueAmount + EPSILON) {
 			throw new IllegalArgumentException("Payment amount cannot exceed EMI due amount");
 		}
 
@@ -73,18 +76,22 @@ public class UserPaymentService {
 		double principalPaid = 0d;
 		double interestPaid = 0d;
 		String emiStatus;
-		if (payAmount + 0.0001 < dueAmount) {
+		double updatedPartial = round(safe(emi.getPartialPaidAmount()) + payAmount);
+		if (payAmount + EPSILON < dueAmount) {
 			emiStatus = "PARTIALLY_PAID";
-			emi.setPartialPaidAmount(safe(emi.getPartialPaidAmount()) + payAmount);
-			emi.setRemainingAmount(round(dueAmount - safe(emi.getPartialPaidAmount())));
+			emi.setPartialPaidAmount(updatedPartial);
+			emi.setRemainingAmount(round((safe(emi.getEmiAmount()) + safe(emi.getPenaltyAmount())) - updatedPartial));
 			principalPaid = round((payAmount / dueAmount) * emi.getPrincipalComponent());
 			interestPaid = round((payAmount / dueAmount) * emi.getInterestComponent());
+			emi.setPaidAmount(0d);
+			emi.setPaidDate(null);
 		} else {
 			emiStatus = "PAID";
-			principalPaid = emi.getPrincipalComponent();
-			interestPaid = emi.getInterestComponent();
-			penaltyPaid = safe(emi.getPenaltyAmount());
-			emi.setPaidAmount(payAmount);
+			principalPaid = round((payAmount / dueAmount) * emi.getPrincipalComponent());
+			interestPaid = round((payAmount / dueAmount) * emi.getInterestComponent());
+			penaltyPaid = round((payAmount / dueAmount) * safe(emi.getPenaltyAmount()));
+			emi.setPartialPaidAmount(updatedPartial);
+			emi.setPaidAmount(round(safe(emi.getEmiAmount()) + safe(emi.getPenaltyAmount())));
 			emi.setPaidDate(LocalDate.now());
 			emi.setRemainingAmount(0d);
 		}
@@ -92,6 +99,10 @@ public class UserPaymentService {
 		String paymentReference = (request.getPaymentReference() == null || request.getPaymentReference().trim().isEmpty())
 				? generatePaymentReference()
 				: request.getPaymentReference().trim();
+
+		transactionRepository.findByPaymentReference(paymentReference).ifPresent(existing -> {
+			throw new IllegalArgumentException("Payment reference already exists");
+		});
 
 		Payment payment = Payment.builder()
 				.paymentNumber(generatePaymentNumber())
@@ -216,7 +227,9 @@ public class UserPaymentService {
 				.paymentStatus(payment.getPaymentStatus())
 				.gatewayTransactionId(payment.getGatewayTransactionId())
 				.paymentReference(payment.getPaymentReference())
+				.cashSettlementStatus(payment.getSettlementStatus())
 				.cashVerifiedAt(payment.getVerifiedAt())
+				.settledAt(payment.getSettledAt())
 				.paidAt(payment.getSuccessAt())
 				.receiptNumber(payment.getPaymentNumber())
 				.build();

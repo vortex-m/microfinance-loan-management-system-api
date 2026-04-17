@@ -24,4 +24,10 @@ public class OfficerDashboardController {
 	public ApiResponse<OfficerDashboardResponse> getDashboard(Authentication authentication) {
 		return ApiResponse.success("Officer dashboard fetched successfully", officerDashboardService.getDashboard(authentication));
 	}
+
+	@PreAuthorize("hasRole('OFFICER')")
+	@GetMapping("/summary")
+	public ApiResponse<OfficerDashboardResponse> getDashboardSummary(Authentication authentication) {
+		return ApiResponse.success("Officer dashboard summary fetched successfully", officerDashboardService.getDashboard(authentication));
+	}
 }
