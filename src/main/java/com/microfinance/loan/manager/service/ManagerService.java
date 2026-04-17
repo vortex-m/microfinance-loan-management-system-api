@@ -118,6 +118,14 @@ public class ManagerService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    public ManagerProfileResponse getProfile(Authentication authentication) {
+        Long userId = currentUserService.getCurrentUserId(authentication);
+        ManagerProfile profile = managerProfileRepository.findByUsersIdWithBranch(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Manager profile not found for user: " + userId));
+        return toResponse(profile);
+    }
+
     @Transactional
     public ManagerProfileResponse updateProfile(org.springframework.security.core.Authentication authentication,
                                                 ManagerProfileUpdateRequest request) {

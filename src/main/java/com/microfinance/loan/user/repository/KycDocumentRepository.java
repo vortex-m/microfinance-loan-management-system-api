@@ -13,6 +13,8 @@ import java.util.Optional;
 public interface KycDocumentRepository extends JpaRepository<KycDocument, Long> {
 	List<KycDocument> findByUserIdOrderByCreatedAtDesc(Long userId);
 	List<KycDocument> findByUserIdAndIsActiveTrueOrderByCreatedAtDesc(Long userId);
+	List<KycDocument> findByIsActiveTrueAndVerificationStatusInOrderByCreatedAtAsc(List<KycStatus> statuses);
+	Optional<KycDocument> findByIdAndUserId(Long id, Long userId);
 	Optional<KycDocument> findTopByUserIdAndDocumentTypeAndIsActiveTrueOrderByVersionDesc(Long userId, KycDocumentType documentType);
 	boolean existsByUserIdAndDocumentTypeAndIsActiveTrue(Long userId, KycDocumentType documentType);
 	boolean existsByUserIdAndDocumentTypeAndVerificationStatusAndIsActiveTrue(Long userId, KycDocumentType documentType, KycStatus verificationStatus);

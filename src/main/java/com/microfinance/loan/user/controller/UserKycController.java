@@ -56,6 +56,30 @@ public class UserKycController {
     }
 
     @PreAuthorize("hasRole('USER')")
+    @DeleteMapping("/kyc/{documentId}")
+    public ApiResponse<KycStatusResponse> deletePendingKyc(Authentication auth, @PathVariable Long documentId) {
+        Long userId = currentUserService.getCurrentUserId(auth);
+
+        return ApiResponse.success(
+                "Pending KYC document deleted successfully",
+                userKycService.deletePendingKycDocument(userId, documentId)
+        );
+    }
+
+    @PreAuthorize("hasRole('USER')")
+    @PutMapping(value = "/kyc/{documentId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<KycStatusResponse.KycDocumentItem> editPendingKyc(Authentication auth,
+                                                                         @PathVariable Long documentId,
+                                                                         @RequestParam(required = false) String documentNumber,
+                                                                         @RequestParam(value = "file", required = false) MultipartFile file) throws IOException {
+        Long userId = currentUserService.getCurrentUserId(auth);
+
+        KycStatusResponse.KycDocumentItem item = userKycService
+                .editPendingKycDocument(userId, documentId, documentNumber, file);
+        return ApiResponse.success("Pending KYC document updated successfully", item);
+    }
+
+    @PreAuthorize("hasRole('USER')")
       @GetMapping("/kyc")
     public ApiResponse<KycStatusResponse> getKycStatus(Authentication auth) {
         Long userId = currentUserService.getCurrentUserId(auth);

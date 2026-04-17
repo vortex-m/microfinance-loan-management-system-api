@@ -96,7 +96,7 @@ public class OfficerKycService {
 	}
 
 	public List<KycReviewResponse> getPendingKycDocuments() {
-		return kycDocumentRepository.findByVerificationStatusInOrderByCreatedAtAsc(List.of(KycStatus.PENDING, KycStatus.IN_REVIEW))
+		return kycDocumentRepository.findByIsActiveTrueAndVerificationStatusInOrderByCreatedAtAsc(List.of(KycStatus.PENDING, KycStatus.IN_REVIEW))
 				.stream()
 				.map(doc -> KycReviewResponse.builder()
 						.documentId(doc.getId())
@@ -113,28 +113,26 @@ public class OfficerKycService {
 		UserProfile profile = userProfileRepository.findByUsersId(userId)
 				.orElseThrow(() -> new IllegalArgumentException("User profile not found for user: " + userId));
 
+		List<KycDocument> activeDocuments = kycDocumentRepository.findByUserIdAndIsActiveTrueOrderByCreatedAtDesc(userId);
+		if (activeDocuments.isEmpty()) {
+			profile.setKycStatus(KycStatus.PENDING);
+			return userProfileRepository.save(profile);
+		}
+
 		boolean aadhaarVerified = kycDocumentRepository.existsByUserIdAndDocumentTypeAndVerificationStatusAndIsActiveTrue(
 				userId, KycDocumentType.AADHAAR, KycStatus.VERIFIED
 		);
 		boolean panVerified = kycDocumentRepository.existsByUserIdAndDocumentTypeAndVerificationStatusAndIsActiveTrue(
 				userId, KycDocumentType.PAN, KycStatus.VERIFIED
 		);
-
-		boolean hasAadhaar = kycDocumentRepository.existsByUserIdAndDocumentTypeAndIsActiveTrue(userId, KycDocumentType.AADHAAR);
-		boolean hasPan = kycDocumentRepository.existsByUserIdAndDocumentTypeAndIsActiveTrue(userId, KycDocumentType.PAN);
-
-		List<KycDocument> activeDocuments = kycDocumentRepository.findByUserIdAndIsActiveTrueOrderByCreatedAtDesc(userId);
 		boolean anyRejectedOrResubmit = activeDocuments.stream().anyMatch(d -> d.getVerificationStatus() == KycStatus.REJECTED || d.getVerificationStatus() == KycStatus.RESUBMIT_REQUIRED);
-		boolean anyPendingOrReview = activeDocuments.stream().anyMatch(d -> d.getVerificationStatus() == KycStatus.PENDING || d.getVerificationStatus() == KycStatus.IN_REVIEW);
 
 		if (aadhaarVerified && panVerified) {
 			profile.setKycStatus(KycStatus.VERIFIED);
 		} else if (anyRejectedOrResubmit) {
 			profile.setKycStatus(KycStatus.RESUBMIT_REQUIRED);
-		} else if (hasAadhaar && hasPan && anyPendingOrReview) {
-			profile.setKycStatus(KycStatus.IN_REVIEW);
 		} else {
-			profile.setKycStatus(KycStatus.PENDING);
+			profile.setKycStatus(KycStatus.IN_REVIEW);
 		}
 
 		kycDocumentRepository.findTopByUserIdAndDocumentTypeAndIsActiveTrueOrderByVersionDesc(userId, KycDocumentType.AADHAAR)

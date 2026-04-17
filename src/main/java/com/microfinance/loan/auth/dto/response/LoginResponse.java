@@ -24,6 +24,9 @@ public class LoginResponse {
     private Role role;
     private UserStatus status;
 
+    // For manager response
+    private String department;
+
     // OTP flow flag
     private Boolean otpRequired;        // true = OTP not yet verified
     private String message;

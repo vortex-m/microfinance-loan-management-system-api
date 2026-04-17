@@ -38,6 +38,13 @@ public class ManagerController {
 	}
 
 	@PreAuthorize("hasRole('MANAGER')")
+	@GetMapping("/profile")
+	public ApiResponse<ManagerProfileResponse> getProfile(Authentication authentication) {
+		return ApiResponse.success("Manager profile fetched successfully", managerService.getProfile(authentication));
+	}
+
+
+	@PreAuthorize("hasRole('MANAGER')")
 	@PostMapping("/staff/create/manager")
 	public ApiResponse<StaffCreateResponse> createManager(
 			Authentication authentication,

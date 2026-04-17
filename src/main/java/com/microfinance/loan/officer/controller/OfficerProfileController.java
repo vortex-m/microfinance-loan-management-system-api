@@ -8,11 +8,7 @@ import com.microfinance.loan.officer.service.OfficerProfileService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/officers")
@@ -40,4 +36,13 @@ public class OfficerProfileController {
 				: "Officer onboarding saved, pending required details";
 		return ApiResponse.success(message, response);
 	}
+
+	@PreAuthorize("hasRole('OFFICER')")
+	@GetMapping("/profile")
+	public ApiResponse<OfficerProfileResponse> getMyProfile(Authentication auth) {
+		Long userId = currentUserService.getCurrentUserId(auth);
+		OfficerProfileResponse response = officerProfileService.getOfficerProfile(userId);
+		return ApiResponse.success("Officer profile fetched successfully", response);
+	}
+
 }

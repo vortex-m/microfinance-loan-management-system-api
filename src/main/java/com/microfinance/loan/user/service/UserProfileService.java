@@ -1,5 +1,6 @@
 package com.microfinance.loan.user.service;
 
+import com.microfinance.loan.auth.entity.User;
 import com.microfinance.loan.branch.entity.BranchProfile;
 import com.microfinance.loan.branch.repository.BranchProfileRepository;
 import com.microfinance.loan.common.entity.Users;
@@ -93,6 +94,20 @@ public class UserProfileService {
                     .orElseThrow(() -> new IllegalArgumentException("Branch not found: " + request.getBranchCode()));
             profile.setBranchProfile(branchProfile);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public UserProfileResponse getUserProfile(Long userId) {
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+        if(user.getRole() != Role.USER){
+            throw new IllegalArgumentException("Profile is available only for user role");
+        }
+
+        UserProfile profile = userProfileRepository.findByUsersId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User profile not found for user: " + userId));
+
+        return mapToResponse(profile, user);
     }
 
     private boolean isOnboardingComplete(UserProfile profile) {

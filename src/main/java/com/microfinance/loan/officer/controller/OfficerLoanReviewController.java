@@ -4,6 +4,7 @@ import com.microfinance.loan.common.dto.ApiResponse;
 import com.microfinance.loan.manager.dto.request.LoanAgentAssignmentRequest;
 import com.microfinance.loan.officer.dto.request.LoanDecisionRequest;
 import com.microfinance.loan.officer.dto.response.LoanReviewResponse;
+import com.microfinance.loan.officer.dto.response.OfficerUserProfileResponse;
 import com.microfinance.loan.officer.dto.response.VerificationEvidenceResponse;
 import com.microfinance.loan.officer.service.OfficerLoanReviewService;
 import jakarta.validation.Valid;
@@ -68,4 +69,15 @@ public class OfficerLoanReviewController {
 				officerLoanReviewService.getVerificationEvidence(authentication, loanApplicationId)
 		);
 	}
+
+	@PreAuthorize("hasRole('OFFICER')")
+	@GetMapping("/{loanApplicationId}/user-profile")
+	public ApiResponse<OfficerUserProfileResponse> getUserProfile(Authentication authentication,
+											 @PathVariable Long loanApplicationId) {
+		return ApiResponse.success(
+				"User profile fetched successfully",
+				officerLoanReviewService.getUserProfile(authentication, loanApplicationId)
+		);
+	}
+
 }

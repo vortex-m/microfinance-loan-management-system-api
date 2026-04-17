@@ -54,6 +54,22 @@ public class OfficerProfileService {
 		return mapToResponse(savedProfile, user);
 	}
 
+	@Transactional(readOnly = true)
+	public OfficerProfileResponse getOfficerProfile(Long userId) {
+		Users user = userRepository.findById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+
+		if (user.getRole() != Role.OFFICER) {
+			throw new IllegalArgumentException("Profile is available only for officer role");
+		}
+
+		OfficerProfile profile = officerProfileRepository.findByUsersId(userId)
+				.orElseThrow(() -> new IllegalArgumentException("Officer profile not found for user: " + userId));
+
+		return mapToResponse(profile, user);
+	}
+
+
 	private boolean isOnboardingComplete(OfficerProfile profile) {
 		return StringUtils.hasText(profile.getFatherName())
 				&& StringUtils.hasText(profile.getMotherName())

@@ -19,16 +19,22 @@ import com.microfinance.loan.common.service.CurrentUserService;
 import com.microfinance.loan.manager.dto.request.LoanAgentAssignmentRequest;
 import com.microfinance.loan.officer.dto.request.LoanDecisionRequest;
 import com.microfinance.loan.officer.dto.response.LoanReviewResponse;
+import com.microfinance.loan.officer.dto.response.OfficerUserProfileResponse;
 import com.microfinance.loan.officer.dto.response.VerificationEvidenceResponse;
 import com.microfinance.loan.officer.entity.LoanReview;
 import com.microfinance.loan.officer.entity.OfficerProfile;
 import com.microfinance.loan.officer.repository.LoanReviewRepository;
 import com.microfinance.loan.officer.repository.OfficerProfileRepository;
+import com.microfinance.loan.user.entity.KycDocument;
 import com.microfinance.loan.user.entity.LoanApplication;
+import com.microfinance.loan.user.entity.UserProfile;
+import com.microfinance.loan.user.repository.KycDocumentRepository;
 import com.microfinance.loan.user.repository.LoanApplicationRepository;
 import com.microfinance.loan.user.repository.UserProfileRepository;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -47,6 +53,7 @@ public class OfficerLoanReviewService {
 	private final AgentTaskRepository agentTaskRepository;
 	private final VerificationReportRepository verificationReportRepository;
 	private final VerificationImageRepository verificationImageRepository;
+	private final KycDocumentRepository kycDocumentRepository;
 
 	public OfficerLoanReviewService(LoanApplicationRepository loanApplicationRepository,
 									OfficerProfileRepository officerProfileRepository,
@@ -56,7 +63,8 @@ public class OfficerLoanReviewService {
 									AgentProfileRepository agentProfileRepository,
 									AgentTaskRepository agentTaskRepository,
 									VerificationReportRepository verificationReportRepository,
-									VerificationImageRepository verificationImageRepository) {
+															VerificationImageRepository verificationImageRepository,
+															KycDocumentRepository kycDocumentRepository) {
 		this.loanApplicationRepository = loanApplicationRepository;
 		this.officerProfileRepository = officerProfileRepository;
 		this.loanReviewRepository = loanReviewRepository;
@@ -66,6 +74,7 @@ public class OfficerLoanReviewService {
 		this.agentTaskRepository = agentTaskRepository;
 		this.verificationReportRepository = verificationReportRepository;
 		this.verificationImageRepository = verificationImageRepository;
+										this.kycDocumentRepository = kycDocumentRepository;
 	}
 
 	@Transactional
@@ -182,6 +191,51 @@ public class OfficerLoanReviewService {
 				.agentLastLocationUpdatedAt(assignedAgentProfile != null ? assignedAgentProfile.getLastLocationUpdateAt() : null)
 				.build();
 	}
+
+	@Transactional(readOnly = true)
+	public OfficerUserProfileResponse getUserProfile(Authentication authentication, Long loanApplicationId) {
+		OfficerProfile officerProfile = getActiveOfficerProfile(authentication);
+
+		LoanApplication application = loanApplicationRepository.findById(loanApplicationId)
+				.orElseThrow(() -> new IllegalArgumentException("Loan application not found: " + loanApplicationId));
+		validateBranchScope(officerProfile, application);
+
+		Users user = application.getUser();
+		UserProfile profile = userProfileRepository.findByUsersId(user.getId())
+				.orElseThrow(() -> new IllegalArgumentException("User profile not found for user: " + user.getId()));
+
+		List<KycDocument> documents = kycDocumentRepository.findByUserIdAndIsActiveTrueOrderByCreatedAtDesc(user.getId());
+
+		return OfficerUserProfileResponse.builder()
+				.userId(user.getId())
+				.name(user.getName())
+				.phone(user.getPhone())
+				.email(user.getEmail())
+				.status(user.getStatus())
+				.isHome(user.getIsHome())
+				.fatherName(profile.getFatherName())
+				.motherName(profile.getMotherName())
+				.wifeName(profile.getWifeName())
+				.husbandName(profile.getHusbandName())
+				.dateOfBirth(profile.getDateOfBirth())
+				.gender(profile.getGender())
+				.occupation(profile.getOccupation())
+				.maritalStatus(profile.getMaritalStatus())
+				.monthlyIncome(profile.getMonthlyIncome())
+				.street(profile.getStreet())
+				.city(profile.getCity())
+				.state(profile.getState())
+				.pinCode(profile.getPinCode())
+				.branchCode(profile.getBranchProfile() != null ? profile.getBranchProfile().getBranchCode() : null)
+				.branchName(profile.getBranchProfile() != null ? profile.getBranchProfile().getBranchName() : null)
+				.regionCode(profile.getBranchProfile() != null ? profile.getBranchProfile().getRegionCode() : null)
+				.kycStatus(profile.getKycStatus())
+				.aadhaarNumber(mask(profile.getAadhaarNumber()))
+				.panNumber(mask(profile.getPanNumber()))
+				.documents(documents.stream().map(this::toKycItem).toList())
+				.build();
+	}
+
 
 	@Transactional
 	public LoanReviewResponse submitDecision(org.springframework.security.core.Authentication authentication,
@@ -391,6 +445,30 @@ public class OfficerLoanReviewService {
 				.deadline(LocalDateTime.now().plusHours(48))
 				.build();
 		agentTaskRepository.save(task);
+	}
+
+	private String mask(String value) {
+		if (!StringUtils.hasText(value)) {
+			return null;
+		}
+		String trimmed = value.trim();
+		if (trimmed.length() <= 4) {
+			return "****";
+		}
+		return "****" + trimmed.substring(trimmed.length() - 4);
+	}
+
+	private OfficerUserProfileResponse.KycItem toKycItem(KycDocument document) {
+		return OfficerUserProfileResponse.KycItem.builder()
+				.documentId(document.getId())
+				.documentType(document.getDocumentType())
+				.documentNumber(mask(document.getDocumentNumber()))
+				.verificationStatus(document.getVerificationStatus())
+				.fileUrl(document.getFileUrl())
+				.reviewedAt(document.getReviewedAt())
+				.officerRemarks(document.getOfficerRemarks())
+				.rejectedReason(document.getRejectedReason())
+				.build();
 	}
 }
 

@@ -79,9 +79,7 @@ public class UserKycService {
 		KycDocument saved = kycDocumentRepository.save(document);
 
 		syncProfileDocNumber(profile, request.getDocumentType(), normalizedDocNumber);
-
-		// Any re-upload requires re-validation by officer.
-		profile.setKycStatus(KycStatus.PENDING);
+		profile.setKycStatus(calculateOverallKycStatus(userId));
 		userProfileRepository.save(profile);
 
 		return mapToItem(saved);
@@ -99,15 +97,106 @@ public class UserKycService {
 			throw new IllegalArgumentException("Please upload both Aadhaar and PAN documents before submitting KYC.");
 		}
 
-		profile.setKycStatus(KycStatus.IN_REVIEW);
+		profile.setKycStatus(calculateOverallKycStatus(userId));
 		userProfileRepository.save(profile);
 
 		return getKycStatus(userId);
 	}
 
+	@Transactional
+	public KycStatusResponse deletePendingKycDocument(Long userId, Long documentId) {
+		UserProfile profile = userProfileRepository.findByUsersId(userId)
+				.orElseThrow(() -> new IllegalArgumentException("User profile not found for user: " + userId));
+
+		KycDocument document = kycDocumentRepository.findByIdAndUserId(documentId, userId)
+				.orElseThrow(() -> new IllegalArgumentException("KYC document not found for user: " + documentId));
+
+		if (document.getVerificationStatus() == KycStatus.VERIFIED) {
+			throw new IllegalArgumentException("Verified KYC document cannot be deleted");
+		}
+
+		if (document.getVerificationStatus() != KycStatus.PENDING) {
+			throw new IllegalArgumentException("Only pending KYC document can be deleted");
+		}
+
+		document.setIsActive(false);
+		kycDocumentRepository.save(document);
+
+		if (!kycDocumentRepository.existsByUserIdAndDocumentTypeAndIsActiveTrue(userId, document.getDocumentType())) {
+			if (document.getDocumentType() == KycDocumentType.AADHAAR) {
+				profile.setAadhaarNumber(null);
+			} else if (document.getDocumentType() == KycDocumentType.PAN) {
+				profile.setPanNumber(null);
+			}
+		}
+
+		profile.setKycStatus(calculateOverallKycStatus(userId));
+		userProfileRepository.save(profile);
+
+		return getKycStatus(userId);
+	}
+
+	@Transactional
+	public KycStatusResponse.KycDocumentItem editPendingKycDocument(Long userId,
+														 Long documentId,
+														 String documentNumber,
+														 MultipartFile file) throws IOException {
+		UserProfile profile = userProfileRepository.findByUsersId(userId)
+				.orElseThrow(() -> new IllegalArgumentException("User profile not found for user: " + userId));
+
+		KycDocument document = kycDocumentRepository.findByIdAndUserId(documentId, userId)
+				.orElseThrow(() -> new IllegalArgumentException("KYC document not found for user: " + documentId));
+
+		if (document.getVerificationStatus() == KycStatus.VERIFIED) {
+			throw new IllegalArgumentException("Verified KYC document cannot be edited");
+		}
+
+		if (document.getVerificationStatus() != KycStatus.PENDING) {
+			throw new IllegalArgumentException("Only pending KYC document can be edited");
+		}
+
+		boolean hasDocumentNumber = StringUtils.hasText(documentNumber);
+		boolean hasFile = file != null && !file.isEmpty();
+		if (!hasDocumentNumber && !hasFile) {
+			throw new IllegalArgumentException("Provide document number or file to edit KYC document");
+		}
+
+		if (hasDocumentNumber) {
+			String normalizedDocNumber = normalizeDocumentNumber(document.getDocumentType(), documentNumber);
+			document.setDocumentNumber(normalizedDocNumber);
+			syncProfileDocNumber(profile, document.getDocumentType(), normalizedDocNumber);
+		}
+
+		if (hasFile) {
+			String fileUrl = fileStorageService.storeFile(file,
+					"kyc/" + userId + "/" + document.getDocumentType().name().toLowerCase());
+			document.setFileUrl(fileUrl);
+			document.setFileName(StringUtils.cleanPath(Objects.requireNonNullElse(file.getOriginalFilename(), "uploaded-file")));
+			document.setMimeType(file.getContentType());
+			document.setFileSize(String.valueOf(file.getSize()));
+		}
+
+		document.setOfficerRemarks(null);
+		document.setRejectedReason(null);
+		document.setReviewedAt(null);
+
+		KycDocument saved = kycDocumentRepository.save(document);
+
+		profile.setKycStatus(calculateOverallKycStatus(userId));
+		userProfileRepository.save(profile);
+
+		return mapToItem(saved);
+	}
+
 	public KycStatusResponse getKycStatus(Long userId) {
 		UserProfile profile = userProfileRepository.findByUsersId(userId)
 				.orElseThrow(() -> new IllegalArgumentException("User profile not found for user: " + userId));
+
+		KycStatus computedStatus = calculateOverallKycStatus(userId);
+		if (profile.getKycStatus() != computedStatus) {
+			profile.setKycStatus(computedStatus);
+			userProfileRepository.save(profile);
+		}
 
 		List<KycStatusResponse.KycDocumentItem> documents = kycDocumentRepository.findByUserIdOrderByCreatedAtDesc(userId)
 				.stream()
@@ -115,9 +204,34 @@ public class UserKycService {
 				.collect(Collectors.toList());
 
 		return KycStatusResponse.builder()
-				.overallKycStatus(profile.getKycStatus())
+				.overallKycStatus(computedStatus)
 				.documents(documents)
 				.build();
+	}
+
+	private KycStatus calculateOverallKycStatus(Long userId) {
+		List<KycDocument> activeDocuments = kycDocumentRepository.findByUserIdAndIsActiveTrueOrderByCreatedAtDesc(userId);
+		if (activeDocuments.isEmpty()) {
+			return KycStatus.PENDING;
+		}
+
+		boolean aadhaarVerified = kycDocumentRepository.existsByUserIdAndDocumentTypeAndVerificationStatusAndIsActiveTrue(
+				userId, KycDocumentType.AADHAAR, KycStatus.VERIFIED
+		);
+		boolean panVerified = kycDocumentRepository.existsByUserIdAndDocumentTypeAndVerificationStatusAndIsActiveTrue(
+				userId, KycDocumentType.PAN, KycStatus.VERIFIED
+		);
+		if (aadhaarVerified && panVerified) {
+			return KycStatus.VERIFIED;
+		}
+
+		boolean anyRejectedOrResubmit = activeDocuments.stream().anyMatch(d ->
+				d.getVerificationStatus() == KycStatus.REJECTED || d.getVerificationStatus() == KycStatus.RESUBMIT_REQUIRED);
+		if (anyRejectedOrResubmit) {
+			return KycStatus.RESUBMIT_REQUIRED;
+		}
+
+		return KycStatus.IN_REVIEW;
 	}
 
 	private void syncProfileDocNumber(UserProfile profile, KycDocumentType documentType, String documentNumber) {

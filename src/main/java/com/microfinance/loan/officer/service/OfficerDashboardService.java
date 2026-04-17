@@ -54,7 +54,7 @@ public class OfficerDashboardService {
 		}
 
 		String branchCode = officer.getBranchProfile().getBranchCode();
-		long pendingKyc = kycDocumentRepository.findByVerificationStatusInOrderByCreatedAtAsc(List.of(KycStatus.PENDING, KycStatus.IN_REVIEW))
+		long pendingKyc = kycDocumentRepository.findByIsActiveTrueAndVerificationStatusInOrderByCreatedAtAsc(List.of(KycStatus.PENDING, KycStatus.IN_REVIEW))
 				.stream()
 				.filter(doc -> doc.getUser() != null
 						&& doc.getUser().getId() != null

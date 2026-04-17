@@ -96,7 +96,12 @@ public class AuthService {
 		updateManagerLastLogin(user);
 
 		String accessToken = jwtUtil.generateToken(loginId, Map.of("role", user.getRole().name(), "uid", user.getId()));
-
+		String managerDepartment = null;
+		if(user.getRole() == Role.MANAGER){
+			managerDepartment = managerProfileRepository.findByUsersId(user.getId())
+					.map(ManagerProfile::getDepartment)
+					.orElse(null);
+		}
 		return LoginResponse.builder()
 				.accessToken(accessToken)
 				.refreshToken(null)
@@ -107,6 +112,7 @@ public class AuthService {
 				.phone(user.getPhone())
 				.isHome(user.getIsHome() != null ? user.getIsHome() : false)
 				.role(user.getRole())
+				.department(managerDepartment)
 				.status(user.getStatus())
 				.otpRequired(false)
 				.message(buildLoginMessage(user.getRole(), loginId))
