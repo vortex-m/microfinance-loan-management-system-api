@@ -16,6 +16,8 @@ public interface TransactionRepository extends JpaRepository<Payment, Long> {
 
 	List<Payment> findByLoanIdOrderByCreatedAtDesc(Long loanId);
 
+	List<Payment> findByUserIdAndLoanIdOrderByCreatedAtDesc(Long userId, Long loanId);
+
 	Optional<Payment> findByPaymentReference(String paymentReference);
 
 	@Query("select coalesce(sum(p.totalPaidAmount), 0.0) from Payment p where p.verifiedBy.id = :agentUserId and p.paymentMode = 'CASH' and p.paymentStatus = com.microfinance.loan.common.enums.PaymentStatus.SUCCESS and p.settlementStatus = :settlementStatus")

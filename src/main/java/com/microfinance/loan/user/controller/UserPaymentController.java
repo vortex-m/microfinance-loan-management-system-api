@@ -41,6 +41,18 @@ public class UserPaymentController {
 	}
 
 	@PreAuthorize("hasRole('USER')")
+	@PostMapping("/loans/{loanId}/emi/pay")
+	public ApiResponse<PaymentHistoryResponse.PaymentItem> payLoanEmi(Authentication authentication,
+														 @PathVariable Long loanId,
+														 @Valid @RequestBody EmiPayRequest request) {
+		Long userId = currentUserService.getCurrentUserId(authentication);
+		return ApiResponse.success(
+				"EMI payment processed successfully",
+				userPaymentService.payEmiForLoan(userId, loanId, request)
+		);
+	}
+
+	@PreAuthorize("hasRole('USER')")
 	@GetMapping("/loans/{loanId}/schedule")
 	public ApiResponse<EmiScheduleResponse> getSchedule(Authentication authentication,
 														@PathVariable Long loanId) {
@@ -58,6 +70,28 @@ public class UserPaymentController {
 		return ApiResponse.success(
 				"Payment history fetched successfully",
 				userPaymentService.getPaymentHistory(userId)
+		);
+	}
+
+	@PreAuthorize("hasRole('USER')")
+	@GetMapping("/loans/{loanId}/history")
+	public ApiResponse<PaymentHistoryResponse> getLoanHistory(Authentication authentication,
+													 @PathVariable Long loanId) {
+		Long userId = currentUserService.getCurrentUserId(authentication);
+		return ApiResponse.success(
+				"Loan payment history fetched successfully",
+				userPaymentService.getPaymentHistoryByLoan(userId, loanId)
+		);
+	}
+
+	@PreAuthorize("hasRole('USER')")
+	@GetMapping("/loans/{loanId}/emi/schedule")
+	public ApiResponse<EmiScheduleResponse> getLoanEmiSchedule(Authentication authentication,
+													 @PathVariable Long loanId) {
+		Long userId = currentUserService.getCurrentUserId(authentication);
+		return ApiResponse.success(
+				"Loan EMI schedule fetched successfully",
+				userPaymentService.getEmiSchedule(userId, loanId)
 		);
 	}
 }

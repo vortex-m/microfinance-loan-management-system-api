@@ -10,7 +10,7 @@ import lombok.*;
 @Builder
 public class EmiPayRequest {
 
-    @NotNull(message = "Loan ID is required")
+      // Optional when loanId is provided in path variable.
     private Long loanId;
 
     @NotNull(message = "EMI schedule ID is required")

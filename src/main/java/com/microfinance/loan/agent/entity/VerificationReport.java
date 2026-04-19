@@ -28,8 +28,8 @@ public class VerificationReport {
     @JoinColumn(name = "task_id", nullable = false, unique = true)
     private AgentTask task;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "loan_application_id", nullable = false, unique = true)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "loan_application_id", nullable = false)
     private LoanApplication loanApplication;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -5,6 +5,7 @@ import com.microfinance.loan.common.enums.LoanStatus;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 @Getter
@@ -24,11 +25,18 @@ public class LoanStatusResponse {
     public static class LoanItem {
         private Long loanApplicationId;
         private String applicationNumber;
+        private Long loanId;
+        private String loanNumber;
         private Double requestedAmount;
+        private Double approvedAmount;
         private Integer tenureMonths;
         private String loanPurpose;
         private DisbursalMode disbursalMode;
         private LoanStatus status;
+        private Double emiAmount;
+        private Double totalPaidAmount;
+        private Double outstandingPrincipal;
+        private LocalDate nextDueDate;
         private String rejectionReason;
         private LocalDateTime appliedAt;
         private LocalDateTime updatedAt;

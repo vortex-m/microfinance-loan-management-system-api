@@ -12,6 +12,8 @@ import com.microfinance.loan.common.enums.UserStatus;
 import com.microfinance.loan.common.repository.UserRepository;
 import com.microfinance.loan.common.service.FileStorageService;
 import com.microfinance.loan.loan.entity.Loan;
+import com.microfinance.loan.loan.entity.LoanEmiSchedule;
+import com.microfinance.loan.loan.repository.LoanEmiScheduleRepository;
 import com.microfinance.loan.loan.repository.LoanRepository;
 import com.microfinance.loan.user.dto.request.LoanApplyRequest;
 import com.microfinance.loan.user.dto.response.BankProofUploadResponse;
@@ -31,6 +33,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -52,6 +55,7 @@ public class UserLoanService {
 	private final KycDocumentRepository kycDocumentRepository;
 	private final FileStorageService fileStorageService;
 	private final LoanRepository loanRepository;
+	private final LoanEmiScheduleRepository loanEmiScheduleRepository;
 	private final AgentProfileRepository agentProfileRepository;
 
 	public UserLoanService(UserRepository userRepository,
@@ -60,6 +64,7 @@ public class UserLoanService {
 						   KycDocumentRepository kycDocumentRepository,
 						   FileStorageService fileStorageService,
 						   LoanRepository loanRepository,
+									   LoanEmiScheduleRepository loanEmiScheduleRepository,
 						   AgentProfileRepository agentProfileRepository) {
 		this.userRepository = userRepository;
 		this.userProfileRepository = userProfileRepository;
@@ -67,6 +72,7 @@ public class UserLoanService {
 		this.kycDocumentRepository = kycDocumentRepository;
 		this.fileStorageService = fileStorageService;
 		this.loanRepository = loanRepository;
+		this.loanEmiScheduleRepository = loanEmiScheduleRepository;
 		this.agentProfileRepository = agentProfileRepository;
 	}
 
@@ -191,18 +197,32 @@ public class UserLoanService {
 
 		List<LoanStatusResponse.LoanItem> items = loanApplicationRepository.findByUserIdOrderByCreatedAtDesc(userId)
 				.stream()
-				.map(application -> LoanStatusResponse.LoanItem.builder()
-						.loanApplicationId(application.getId())
-						.applicationNumber(application.getApplicationNumber())
-						.requestedAmount(application.getRequestedAmount())
-						.tenureMonths(application.getTenureMonths())
-						.loanPurpose(application.getLoanPurpose())
-						.disbursalMode(application.getDisbursalMode())
-						.status(application.getStatus())
-						.rejectionReason(application.getRejectionReason())
-						.appliedAt(application.getCreatedAt())
-						.updatedAt(application.getUpdatedAt())
-						.build())
+				.map(application -> {
+					Loan linkedLoan = loanRepository.findByLoanApplicationId(application.getId()).orElse(null);
+					LocalDate nextDueDate = linkedLoan == null
+							? null
+							: findNextDueDate(linkedLoan.getId());
+
+					return LoanStatusResponse.LoanItem.builder()
+							.loanApplicationId(application.getId())
+							.applicationNumber(application.getApplicationNumber())
+							.loanId(linkedLoan != null ? linkedLoan.getId() : null)
+							.loanNumber(linkedLoan != null ? linkedLoan.getLoanNumber() : null)
+							.requestedAmount(application.getRequestedAmount())
+							.approvedAmount(application.getApprovedAmount())
+							.tenureMonths(application.getTenureMonths())
+							.loanPurpose(application.getLoanPurpose())
+							.disbursalMode(application.getDisbursalMode())
+							.status(application.getStatus())
+							.emiAmount(linkedLoan != null ? linkedLoan.getEmiAmount() : null)
+							.totalPaidAmount(linkedLoan != null ? linkedLoan.getTotalPaidAmount() : null)
+							.outstandingPrincipal(linkedLoan != null ? linkedLoan.getOutstandingPrincipal() : null)
+							.nextDueDate(nextDueDate)
+							.rejectionReason(application.getRejectionReason())
+							.appliedAt(application.getCreatedAt())
+							.updatedAt(application.getUpdatedAt())
+							.build();
+				})
 				.toList();
 
 		return LoanStatusResponse.builder().loans(items).build();
@@ -214,6 +234,10 @@ public class UserLoanService {
 				.orElseThrow(() -> new IllegalArgumentException("Loan application not found: " + loanApplicationId));
 
 		Loan loan = loanRepository.findByLoanApplicationId(application.getId()).orElse(null);
+		LocalDate nextDueDate = loan == null ? null : findNextDueDate(loan.getId());
+		Double pendingAmount = loan == null
+				? null
+				: round(Math.max(0d, safe(loan.getTotalAmountPayable()) - safe(loan.getTotalPaidAmount())));
 
 		return LoanDetailResponse.builder()
 				.loanApplicationId(application.getId())
@@ -227,6 +251,7 @@ public class UserLoanService {
 				.disbursalMode(application.getDisbursalMode())
 				.disbursalBankName(application.getDisbursalBankName())
 				.disbursalBankAccount(application.getDisbursalBankAccount())
+				.disbursalBankAccountMasked(maskBankAccount(application.getDisbursalBankAccount()))
 				.disbursalIfscCode(application.getDisbursalIfscCode())
 				.loanNumber(loan != null ? loan.getLoanNumber() : null)
 				.approvedAmount(application.getApprovedAmount())
@@ -242,14 +267,29 @@ public class UserLoanService {
 				.emisOverdue(loan != null ? loan.getEmisOverdue() : null)
 				.outstandingPrincipal(loan != null ? loan.getOutstandingPrincipal() : null)
 				.totalPaidAmount(loan != null ? loan.getTotalPaidAmount() : null)
+				.pendingAmount(pendingAmount)
+				.nextDueDate(nextDueDate)
 				.disbursementDate(loan != null ? loan.getDisbursementDate() : null)
 				.firstEmiDate(loan != null ? loan.getFirstEmiDate() : null)
 				.lastEmiDate(loan != null ? loan.getLastEmiDate() : null)
 				.officerRemarks(application.getOfficerRemarks())
 				.rejectionReason(application.getRejectionReason())
+				.assignedAgentId(application.getAssignedAgent() != null ? application.getAssignedAgent().getId() : null)
+				.assignedAgentName(application.getAssignedAgent() != null ? application.getAssignedAgent().getName() : null)
+				.assignedAgentPhone(application.getAssignedAgent() != null ? application.getAssignedAgent().getPhone() : null)
+				.assignedOfficerId(application.getAssignedOfficer() != null ? application.getAssignedOfficer().getId() : null)
+				.assignedOfficerName(application.getAssignedOfficer() != null ? application.getAssignedOfficer().getName() : null)
+				.assignedOfficerPhone(application.getAssignedOfficer() != null ? application.getAssignedOfficer().getPhone() : null)
 				.appliedAt(application.getCreatedAt())
 				.disbursedAt(application.getDisbursedAt())
 				.build();
+	}
+
+	private LocalDate findNextDueDate(Long loanId) {
+		return loanEmiScheduleRepository
+				.findFirstByLoanIdAndEmiStatusInOrderByEmiNumberAsc(loanId, List.of("PENDING", "OVERDUE", "PARTIALLY_PAID"))
+				.map(LoanEmiSchedule::getDueDate)
+				.orElse(null);
 	}
 
 	private void validateDisbursalFields(LoanApplyRequest request) {
@@ -346,5 +386,27 @@ public class UserLoanService {
 
 	private String normalizeIfsc(String ifsc) {
 		return ifsc == null ? null : ifsc.trim().toUpperCase();
+	}
+
+	private String maskBankAccount(String accountNumber) {
+		if (!StringUtils.hasText(accountNumber)) {
+			return null;
+		}
+
+		String trimmed = accountNumber.trim();
+		if (trimmed.length() <= 4) {
+			return trimmed;
+		}
+
+		String suffix = trimmed.substring(trimmed.length() - 4);
+		return "X".repeat(trimmed.length() - 4) + suffix;
+	}
+
+	private double safe(Double value) {
+		return value == null ? 0d : value;
+	}
+
+	private Double round(double value) {
+		return Math.round(value * 100d) / 100d;
 	}
 }

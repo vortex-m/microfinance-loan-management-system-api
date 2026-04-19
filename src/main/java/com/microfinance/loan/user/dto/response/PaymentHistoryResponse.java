@@ -24,7 +24,9 @@ public class PaymentHistoryResponse {
     public static class PaymentItem {
         private Long paymentId;
         private String paymentNumber;
+        private Long loanId;
         private String loanNumber;
+        private Long emiScheduleId;
         private Integer emiNumber;
         private Double totalPaidAmount;
         private Double principalPaid;

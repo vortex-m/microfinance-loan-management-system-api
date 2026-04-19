@@ -96,9 +96,6 @@ public class UserProfile {
         if (this.originChannel == null) {
             this.originChannel = OriginChannel.SELF_SERVICE;
         }
-//        if (this.kycApproved == null) {
-//            this.kycApproved = false;
-//        }
     }
 
     @PreUpdate

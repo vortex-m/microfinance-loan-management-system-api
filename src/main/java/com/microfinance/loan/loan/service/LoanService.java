@@ -103,12 +103,12 @@ public class LoanService {
 
 		Loan savedLoan = loanRepository.save(loan);
 		createEmiSchedule(savedLoan);
-		saveStatusHistory(savedLoan, null, LoanStatus.APPROVED, manager, "Loan booked after manager approval");
+		saveStatusHistory(savedLoan, LoanStatus.PENDING_MANAGER_APPROVAL, LoanStatus.APPROVED, manager, "Loan booked after manager approval");
 		return savedLoan;
 	}
 
 	@Transactional
-	public Loan markBankDisbursed(Loan loan, String transactionReference, Users changedBy) {
+	public void markBankDisbursed(Loan loan, String transactionReference, Users changedBy) {
 		LoanStatus previousStatus = loan.getLoanStatus();
 		activateEmiTimelineFromDisbursal(loan);
 		loan.setDisbursalTransactionRef(transactionReference);
@@ -116,11 +116,10 @@ public class LoanService {
 		loan.setLoanStatus(LoanStatus.DISBURSED);
 		Loan saved = loanRepository.save(loan);
 		saveStatusHistory(saved, previousStatus, LoanStatus.DISBURSED, changedBy, "Bank disbursal confirmed");
-		return saved;
 	}
 
 	@Transactional
-	public Loan markCashDisbursed(Loan loan, Users cashAgent) {
+	public void markCashDisbursed(Loan loan, Users cashAgent) {
 		LoanStatus previousStatus = loan.getLoanStatus();
 		activateEmiTimelineFromDisbursal(loan);
 		loan.setCashHandoverAgent(cashAgent);
@@ -129,7 +128,6 @@ public class LoanService {
 		loan.setLoanStatus(LoanStatus.DISBURSED);
 		Loan saved = loanRepository.save(loan);
 		saveStatusHistory(saved, previousStatus, LoanStatus.DISBURSED, cashAgent, "Cash disbursal completed via OTP");
-		return saved;
 	}
 
 	private void createEmiSchedule(Loan loan) {
@@ -184,9 +182,10 @@ public class LoanService {
 								   LoanStatus newStatus,
 								   Users changedBy,
 								   String reason) {
+		LoanStatus effectivePrevious = previousStatus != null ? previousStatus : newStatus;
 		LoanStatusHistory history = LoanStatusHistory.builder()
 				.loan(loan)
-				.previousStatus(previousStatus)
+				.previousStatus(effectivePrevious)
 				.newStatus(newStatus)
 				.changedBy(changedBy)
 				.changedByRole(changedBy != null && changedBy.getRole() != null ? changedBy.getRole().name() : "SYSTEM")

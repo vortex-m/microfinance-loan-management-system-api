@@ -132,6 +132,17 @@ public class UserPaymentService {
 		return toPaymentItem(payment, emi);
 	}
 
+	@Transactional
+	public PaymentHistoryResponse.PaymentItem payEmiForLoan(Long userId, Long loanId, EmiPayRequest request) {
+		if (request.getLoanId() == null) {
+			request.setLoanId(loanId);
+		} else if (!loanId.equals(request.getLoanId())) {
+			throw new IllegalArgumentException("Loan ID in request body must match path variable");
+		}
+
+		return payEmi(userId, request);
+	}
+
 	@Transactional(readOnly = true)
 	public EmiScheduleResponse getEmiSchedule(Long userId, Long loanId) {
 		Loan loan = loanRepository.findById(loanId)
@@ -168,6 +179,24 @@ public class UserPaymentService {
 	@Transactional(readOnly = true)
 	public PaymentHistoryResponse getPaymentHistory(Long userId) {
 		List<PaymentHistoryResponse.PaymentItem> items = transactionRepository.findByUserIdOrderByCreatedAtDesc(userId)
+				.stream()
+				.map(payment -> toPaymentItem(payment, payment.getEmiSchedule()))
+				.toList();
+
+		return PaymentHistoryResponse.builder()
+				.payments(items)
+				.build();
+	}
+
+	@Transactional(readOnly = true)
+	public PaymentHistoryResponse getPaymentHistoryByLoan(Long userId, Long loanId) {
+		Loan loan = loanRepository.findById(loanId)
+				.orElseThrow(() -> new IllegalArgumentException("Loan not found: " + loanId));
+		if (!loan.getUser().getId().equals(userId)) {
+			throw new IllegalArgumentException("You can view payment history only for your own loan");
+		}
+
+		List<PaymentHistoryResponse.PaymentItem> items = transactionRepository.findByUserIdAndLoanIdOrderByCreatedAtDesc(userId, loanId)
 				.stream()
 				.map(payment -> toPaymentItem(payment, payment.getEmiSchedule()))
 				.toList();
@@ -217,7 +246,9 @@ public class UserPaymentService {
 		return PaymentHistoryResponse.PaymentItem.builder()
 				.paymentId(payment.getId())
 				.paymentNumber(payment.getPaymentNumber())
+				.loanId(payment.getLoan() != null ? payment.getLoan().getId() : null)
 				.loanNumber(payment.getLoan().getLoanNumber())
+				.emiScheduleId(emi != null ? emi.getId() : null)
 				.emiNumber(emi != null ? emi.getEmiNumber() : null)
 				.totalPaidAmount(payment.getTotalPaidAmount())
 				.principalPaid(payment.getPrincipalPaid())

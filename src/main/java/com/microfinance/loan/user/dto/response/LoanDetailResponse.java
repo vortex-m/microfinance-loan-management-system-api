@@ -28,6 +28,7 @@ public class LoanDetailResponse {
     private DisbursalMode disbursalMode;
     private String disbursalBankName;
     private String disbursalBankAccount;
+    private String disbursalBankAccountMasked;
     private String disbursalIfscCode;
 
     // Approved details (null if not yet approved)
@@ -47,6 +48,8 @@ public class LoanDetailResponse {
     private Integer emisOverdue;
     private Double outstandingPrincipal;
     private Double totalPaidAmount;
+    private Double pendingAmount;
+    private LocalDate nextDueDate;
 
     // Dates
     private LocalDate disbursementDate;
@@ -56,6 +59,14 @@ public class LoanDetailResponse {
     // Remarks
     private String officerRemarks;
     private String rejectionReason;
+
+    // Assignment details
+    private Long assignedAgentId;
+    private String assignedAgentName;
+    private String assignedAgentPhone;
+    private Long assignedOfficerId;
+    private String assignedOfficerName;
+    private String assignedOfficerPhone;
 
     private LocalDateTime appliedAt;
     private LocalDateTime disbursedAt;
