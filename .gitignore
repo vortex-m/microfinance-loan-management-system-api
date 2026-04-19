@@ -38,3 +38,4 @@ src/main/resources/application-prod.yml
 
 upload/
 PROJECT_INSTRUCTIONS.md/
+FRONTEND_USER_LOAN_FLOW.md/
