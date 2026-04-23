@@ -30,9 +30,9 @@ public class AgentTask {
     @JoinColumn(name = "loan_application_id", nullable = false)
     private LoanApplication loanApplication;
 
-    // Assigned agent
+    // Assigned agent. For pooled cash-collection tasks this stays null until an agent claims it.
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "agent_id", nullable = false)
+    @JoinColumn(name = "agent_id")
     private Users agent;
 
     // Assigned by (officer or system)

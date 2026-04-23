@@ -5,6 +5,8 @@ import com.microfinance.loan.agent.entity.AgentProfile;
 import com.microfinance.loan.agent.repository.AgentProfileRepository;
 import com.microfinance.loan.common.entity.Users;
 import com.microfinance.loan.common.enums.AgentAvailability;
+import com.microfinance.loan.common.enums.CashSettlementStatus;
+import com.microfinance.loan.payment.repository.TransactionRepository;
 import com.microfinance.loan.common.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +27,8 @@ class AgentProfileServiceTest {
     private AgentProfileRepository agentProfileRepository;
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private TransactionRepository transactionRepository;
 
     @InjectMocks
     private AgentProfileService agentProfileService;
@@ -36,6 +40,10 @@ class AgentProfileServiceTest {
 
         when(userRepository.findById(88L)).thenReturn(Optional.of(user));
         when(agentProfileRepository.findByUsersId(88L)).thenReturn(Optional.of(profile));
+        when(transactionRepository.sumCashAmountByAgentAndSettlementStatus(88L, CashSettlementStatus.COLLECTED_UNSETTLED))
+                .thenReturn(0d);
+        when(transactionRepository.sumCashAmountByAgentAndSettlementStatus(88L, CashSettlementStatus.SETTLED))
+                .thenReturn(0d);
         when(agentProfileRepository.save(any(AgentProfile.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         AgentProfileResponse response = agentProfileService.updateAvailability(88L, AgentAvailability.BUSY);

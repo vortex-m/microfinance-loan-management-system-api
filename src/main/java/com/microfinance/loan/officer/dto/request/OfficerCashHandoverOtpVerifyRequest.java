@@ -1,5 +1,6 @@
-package com.microfinance.loan.agent.dto.request;
+package com.microfinance.loan.officer.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,8 +13,12 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CashDisbursalOtpGenerateRequest {
+public class OfficerCashHandoverOtpVerifyRequest {
 
     @NotNull(message = "Task id is required")
     private Long taskId;
+
+    @NotBlank(message = "OTP is required")
+    private String otp;
 }
+

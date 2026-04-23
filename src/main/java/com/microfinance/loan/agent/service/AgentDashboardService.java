@@ -9,6 +9,7 @@ import com.microfinance.loan.common.enums.CashSettlementStatus;
 import com.microfinance.loan.common.enums.TaskStatus;
 import com.microfinance.loan.common.service.CurrentUserService;
 import com.microfinance.loan.payment.repository.TransactionRepository;
+import com.microfinance.loan.user.repository.LoanApplicationRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -21,15 +22,18 @@ public class AgentDashboardService {
 	private final AgentProfileRepository agentProfileRepository;
 	private final AgentTaskRepository agentTaskRepository;
 	private final TransactionRepository transactionRepository;
+	private final LoanApplicationRepository loanApplicationRepository;
 
 	public AgentDashboardService(CurrentUserService currentUserService,
 								 AgentProfileRepository agentProfileRepository,
 								 AgentTaskRepository agentTaskRepository,
-								 TransactionRepository transactionRepository) {
+							 TransactionRepository transactionRepository,
+							 LoanApplicationRepository loanApplicationRepository) {
 		this.currentUserService = currentUserService;
 		this.agentProfileRepository = agentProfileRepository;
 		this.agentTaskRepository = agentTaskRepository;
 		this.transactionRepository = transactionRepository;
+		this.loanApplicationRepository = loanApplicationRepository;
 	}
 
 	public AgentDashboardResponse getDashboard(org.springframework.security.core.Authentication authentication) {
@@ -47,12 +51,17 @@ public class AgentDashboardService {
 		return AgentDashboardResponse.builder()
 				.agentUserId(agentUserId)
 				.agentCode(profile.getAgentCode())
+				.totalAssignedUsers((int) loanApplicationRepository.countDistinctAssignedUsersByAgentId(agentUserId))
 				.totalAssignedTasks((int) agentTaskRepository.countByAgentId(agentUserId))
 				.assignedTasks((int) agentTaskRepository.countByAgentIdAndTaskStatus(agentUserId, TaskStatus.ASSIGNED))
 				.acceptedTasks((int) agentTaskRepository.countByAgentIdAndTaskStatus(agentUserId, TaskStatus.ACCEPTED))
 				.inProgressTasks((int) agentTaskRepository.countByAgentIdAndTaskStatus(agentUserId, TaskStatus.IN_PROGRESS))
 				.pendingVerificationTasks((int) agentTaskRepository.countByAgentIdAndTaskStatusAndTaskType(agentUserId, TaskStatus.ASSIGNED, AgentTaskType.VERIFICATION))
-				.pendingCashCollectionTasks((int) agentTaskRepository.countByAgentIdAndTaskStatusAndTaskType(agentUserId, TaskStatus.ASSIGNED, AgentTaskType.CASH_COLLECTION))
+				.pendingCashCollectionTasks((int) agentTaskRepository.countByAgentIdAndTaskStatusAndTaskType(
+						agentUserId,
+						TaskStatus.ASSIGNED,
+						AgentTaskType.CASH_COLLECTION
+				))
 				.cashCollectionsInProgress((int) agentTaskRepository.countByAgentIdAndTaskStatusAndTaskType(agentUserId, TaskStatus.IN_PROGRESS, AgentTaskType.CASH_COLLECTION))
 				.completedToday((int) agentTaskRepository.countByAgentIdAndTaskStatusAndCompletedAtBetween(agentUserId, TaskStatus.COMPLETED, dayStart, dayEnd))
 				.agentAvailability(profile.getAgentAvailability())

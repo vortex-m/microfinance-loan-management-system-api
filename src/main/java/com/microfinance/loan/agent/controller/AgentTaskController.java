@@ -48,6 +48,13 @@ public class AgentTaskController {
     }
 
     @PreAuthorize("hasRole('AGENT')")
+    @GetMapping("/tasks/{taskId}")
+    public ApiResponse<AgentTaskResponse> getTaskDetail(Authentication auth, @PathVariable Long taskId) {
+        Long agentId = currentUserService.getCurrentUserId(auth);
+        return ApiResponse.success("Agent task fetched", agentTaskService.getTaskDetail(agentId, taskId));
+    }
+
+    @PreAuthorize("hasRole('AGENT')")
     @PostMapping("/tasks/{taskId}/accept")
     public ApiResponse<AgentTaskResponse> acceptTask(Authentication auth, @PathVariable Long taskId) {
         Long agentId = currentUserService.getCurrentUserId(auth);

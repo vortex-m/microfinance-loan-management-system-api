@@ -1,13 +1,17 @@
 package com.microfinance.loan.user.service;
 
 import com.microfinance.loan.agent.dto.request.AgentLoanApplyForUserRequest;
+import com.microfinance.loan.agent.entity.AgentTask;
 import com.microfinance.loan.agent.entity.AgentProfile;
 import com.microfinance.loan.agent.repository.AgentProfileRepository;
+import com.microfinance.loan.agent.repository.AgentTaskRepository;
 import com.microfinance.loan.common.entity.Users;
+import com.microfinance.loan.common.enums.AgentTaskType;
 import com.microfinance.loan.common.enums.DisbursalMode;
 import com.microfinance.loan.common.enums.KycDocumentType;
 import com.microfinance.loan.common.enums.KycStatus;
 import com.microfinance.loan.common.enums.OriginChannel;
+import com.microfinance.loan.common.enums.TaskStatus;
 import com.microfinance.loan.common.enums.UserStatus;
 import com.microfinance.loan.common.repository.UserRepository;
 import com.microfinance.loan.common.service.FileStorageService;
@@ -57,6 +61,7 @@ public class UserLoanService {
 	private final LoanRepository loanRepository;
 	private final LoanEmiScheduleRepository loanEmiScheduleRepository;
 	private final AgentProfileRepository agentProfileRepository;
+	private final AgentTaskRepository agentTaskRepository;
 
 	public UserLoanService(UserRepository userRepository,
 						   UserProfileRepository userProfileRepository,
@@ -65,7 +70,8 @@ public class UserLoanService {
 						   FileStorageService fileStorageService,
 						   LoanRepository loanRepository,
 									   LoanEmiScheduleRepository loanEmiScheduleRepository,
-						   AgentProfileRepository agentProfileRepository) {
+						   AgentProfileRepository agentProfileRepository,
+						   AgentTaskRepository agentTaskRepository) {
 		this.userRepository = userRepository;
 		this.userProfileRepository = userProfileRepository;
 		this.loanApplicationRepository = loanApplicationRepository;
@@ -74,6 +80,7 @@ public class UserLoanService {
 		this.loanRepository = loanRepository;
 		this.loanEmiScheduleRepository = loanEmiScheduleRepository;
 		this.agentProfileRepository = agentProfileRepository;
+		this.agentTaskRepository = agentTaskRepository;
 	}
 
 	@Transactional
@@ -173,6 +180,7 @@ public class UserLoanService {
 				.build();
 
 		LoanApplication saved = loanApplicationRepository.save(application);
+		ensureVerificationTask(saved, agentProfile.getUsers(), agentProfile.getUsers());
 		return toApplyResponse(saved);
 	}
 
@@ -408,5 +416,51 @@ public class UserLoanService {
 
 	private Double round(double value) {
 		return Math.round(value * 100d) / 100d;
+	}
+
+	private void ensureVerificationTask(LoanApplication application, Users assignedAgent, Users assignedBy) {
+		if (application == null || application.getId() == null || assignedAgent == null) {
+			return;
+		}
+
+		List<TaskStatus> openStatuses = List.of(TaskStatus.ASSIGNED, TaskStatus.ACCEPTED, TaskStatus.IN_PROGRESS);
+		AgentTask openTask = agentTaskRepository
+				.findTopByLoanApplicationIdAndTaskTypeAndTaskStatusInOrderByCreatedAtDesc(
+						application.getId(),
+						AgentTaskType.VERIFICATION,
+						openStatuses
+				)
+				.orElse(null);
+
+		if (openTask != null) {
+			if (openTask.getAgent() != null && assignedAgent.getId().equals(openTask.getAgent().getId())) {
+				return;
+			}
+
+			openTask.setAgent(assignedAgent);
+			openTask.setAssignedBy(assignedBy);
+			openTask.setTaskStatus(TaskStatus.ASSIGNED);
+			openTask.setAcceptedAt(null);
+			openTask.setStartedAt(null);
+			openTask.setCompletedAt(null);
+			openTask.setDeclineReason(null);
+			openTask.setDeadline(LocalDateTime.now().plusHours(48));
+			agentTaskRepository.save(openTask);
+			return;
+		}
+
+		AgentTask task = AgentTask.builder()
+				.taskCode("TSK-VER-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
+						+ "-" + UUID.randomUUID().toString().substring(0, 5).toUpperCase())
+				.loanApplication(application)
+				.agent(assignedAgent)
+				.assignedBy(assignedBy)
+				.taskType(AgentTaskType.VERIFICATION)
+				.taskStatus(TaskStatus.ASSIGNED)
+				.taskDescription("Field verification for applicant residence, documents, and repayment capacity.")
+				.priorityLevel("HIGH")
+				.deadline(LocalDateTime.now().plusHours(48))
+				.build();
+		agentTaskRepository.save(task);
 	}
 }

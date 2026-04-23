@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 public class AgentDashboardResponse {
 	private Long agentUserId;
 	private String agentCode;
+	private Integer totalAssignedUsers;
 	private Integer totalAssignedTasks;
 	private Integer assignedTasks;
 	private Integer acceptedTasks;

@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -20,6 +21,17 @@ public class AgentTaskResponse {
 	private String taskCode;
 	private Long loanApplicationId;
 	private String applicationNumber;
+	private Long userId;
+	private String userName;
+	private String userPhone;
+
+	private Long loanId;
+	private String loanNumber;
+	private String loanStatus;
+	private Double loanEmiAmount;
+	private LocalDate nextEmiDueDate;
+	private Long nextEmiScheduleId;
+	private Double nextEmiOutstandingAmount;
 
 	private AgentTaskType taskType;
 	private TaskStatus taskStatus;

@@ -4,6 +4,7 @@ import com.microfinance.loan.agent.dto.response.AgentTaskResponse;
 import com.microfinance.loan.agent.entity.AgentTask;
 import com.microfinance.loan.agent.repository.AgentTaskRepository;
 import com.microfinance.loan.agent.repository.CashCollectionOtpRepository;
+import com.microfinance.loan.common.entity.Users;
 import com.microfinance.loan.common.enums.TaskStatus;
 import com.microfinance.loan.common.service.MailService;
 import com.microfinance.loan.loan.repository.LoanEmiScheduleRepository;
@@ -18,7 +19,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,8 +54,9 @@ class AgentTaskServiceTest {
 
     @Test
     void acceptTask_shouldMoveAssignedTaskToAccepted() {
-        AgentTask task = AgentTask.builder().id(11L).taskStatus(TaskStatus.ASSIGNED).build();
-        when(agentTaskRepository.findByIdAndAgentId(11L, 101L)).thenReturn(Optional.of(task));
+        Users agent = Users.builder().id(101L).build();
+        AgentTask task = AgentTask.builder().id(11L).taskStatus(TaskStatus.ASSIGNED).agent(agent).build();
+        when(agentTaskRepository.findById(11L)).thenReturn(Optional.of(task));
         when(agentTaskRepository.save(any(AgentTask.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         AgentTaskResponse response = agentTaskService.acceptTask(101L, 11L);
@@ -66,11 +67,26 @@ class AgentTaskServiceTest {
 
     @Test
     void declineTask_shouldRequireReason() {
-        AgentTask task = AgentTask.builder().id(12L).taskStatus(TaskStatus.ASSIGNED).build();
-        when(agentTaskRepository.findByIdAndAgentId(12L, 101L)).thenReturn(Optional.of(task));
+        Users agent = Users.builder().id(101L).build();
+        AgentTask task = AgentTask.builder().id(12L).taskStatus(TaskStatus.ASSIGNED).agent(agent).build();
+        when(agentTaskRepository.findById(12L)).thenReturn(Optional.of(task));
 
         assertThrows(IllegalArgumentException.class,
                 () -> agentTaskService.declineTask(101L, 12L, "  "));
+    }
+
+    @Test
+    void acceptTask_shouldRejectTaskAssignedToAnotherAgent() {
+        Users assignedAgent = Users.builder().id(999L).build();
+        AgentTask assignedTask = AgentTask.builder()
+                .id(13L)
+                .taskStatus(TaskStatus.ASSIGNED)
+                .agent(assignedAgent)
+                .build();
+        when(agentTaskRepository.findById(13L)).thenReturn(Optional.of(assignedTask));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> agentTaskService.acceptTask(101L, 13L));
     }
 }
 

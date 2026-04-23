@@ -2,7 +2,10 @@ package com.microfinance.loan.agent.service;
 
 import com.microfinance.loan.agent.dto.request.VerificationImageRequest;
 import com.microfinance.loan.agent.dto.request.VerificationReportRequest;
+import com.microfinance.loan.agent.dto.request.VerificationSubmissionRequest;
+import com.microfinance.loan.agent.dto.response.AgentTaskResponse;
 import com.microfinance.loan.agent.dto.response.VerificationReportResponse;
+import com.microfinance.loan.agent.dto.response.VerificationSubmissionResponse;
 import com.microfinance.loan.agent.entity.AgentTask;
 import com.microfinance.loan.agent.entity.VerificationImage;
 import com.microfinance.loan.agent.entity.VerificationReport;
@@ -19,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -28,15 +32,60 @@ public class AgentVerificationService {
     private final VerificationReportRepository verificationReportRepository;
     private final VerificationImageRepository verificationImageRepository;
     private final FileStorageService fileStorageService;
+    private final AgentTaskService agentTaskService;
 
     public AgentVerificationService(AgentTaskRepository agentTaskRepository,
                                     VerificationReportRepository verificationReportRepository,
                                     VerificationImageRepository verificationImageRepository,
-                                    FileStorageService fileStorageService) {
+                                    FileStorageService fileStorageService,
+                                    AgentTaskService agentTaskService) {
         this.agentTaskRepository = agentTaskRepository;
         this.verificationReportRepository = verificationReportRepository;
         this.verificationImageRepository = verificationImageRepository;
         this.fileStorageService = fileStorageService;
+        this.agentTaskService = agentTaskService;
+    }
+
+    @Transactional
+    public VerificationSubmissionResponse submitVerification(Long agentId,
+                                                             Long taskId,
+                                                             VerificationSubmissionRequest request,
+                                                             List<MultipartFile> files) throws IOException {
+        if (request == null || request.getReport() == null) {
+            throw new IllegalArgumentException("Verification report payload is required");
+        }
+        if (request.getImages() == null || request.getImages().isEmpty()) {
+            throw new IllegalArgumentException("At least one image metadata entry is required");
+        }
+        if (files == null || files.isEmpty()) {
+            throw new IllegalArgumentException("At least one verification image file is required");
+        }
+        if (files.size() != request.getImages().size()) {
+            throw new IllegalArgumentException("Image metadata count must match uploaded files count");
+        }
+
+        request.getReport().setTaskId(taskId);
+        submitReport(agentId, taskId, request.getReport());
+
+        for (int i = 0; i < files.size(); i++) {
+            MultipartFile file = files.get(i);
+            if (file == null || file.isEmpty()) {
+                throw new IllegalArgumentException("Image file at index " + i + " is empty");
+            }
+            uploadImage(agentId, taskId, request.getImages().get(i), file);
+        }
+
+        AgentTaskResponse taskResponse = agentTaskService.completeTask(agentId, taskId);
+        VerificationReportResponse finalReport = getReport(agentId, taskId);
+
+        return VerificationSubmissionResponse.builder()
+                .taskId(taskResponse.getTaskId())
+                .taskStatus(taskResponse.getTaskStatus())
+                .reportId(finalReport.getReportId())
+                .verificationStatus(finalReport.getVerificationStatus())
+                .imageCount(finalReport.getImageCount())
+                .completedAt(taskResponse.getCompletedAt())
+                .build();
     }
 
     @Transactional

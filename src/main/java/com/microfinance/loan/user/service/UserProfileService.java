@@ -1,6 +1,5 @@
 package com.microfinance.loan.user.service;
 
-import com.microfinance.loan.auth.entity.User;
 import com.microfinance.loan.branch.entity.BranchProfile;
 import com.microfinance.loan.branch.repository.BranchProfileRepository;
 import com.microfinance.loan.common.entity.Users;
@@ -147,7 +146,6 @@ public class UserProfileService {
                 .aadhaarNumber(profile.getAadhaarNumber())
                 .panNumber(profile.getPanNumber())
                 .kycStatus(profile.getKycStatus())
-//                .kycApproved(profile.getKycApproved())
                 .street(profile.getStreet())
                 .city(profile.getCity())
                 .state(profile.getState())

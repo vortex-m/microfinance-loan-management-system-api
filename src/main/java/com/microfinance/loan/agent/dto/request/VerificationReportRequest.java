@@ -2,7 +2,6 @@ package com.microfinance.loan.agent.dto.request;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,7 +14,6 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class VerificationReportRequest {
-	@NotNull(message = "Task id is required")
 	private Long taskId;
 
 	@NotBlank(message = "Report summary is required")

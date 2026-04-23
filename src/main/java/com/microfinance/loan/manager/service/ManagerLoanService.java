@@ -228,6 +228,9 @@ public class ManagerLoanService {
 
 		Users officer = application.getAssignedOfficer();
 		Loan bookedLoan = loanService.createLoanFromApplication(application, officer, managerUser, assignedAgent);
+		if (application.getDisbursalMode() == DisbursalMode.CASH) {
+			ensureCashDisbursalTask(application, assignedAgent, managerUser);
+		}
 		return toResponse(application, bookedLoan);
 	}
 
@@ -545,13 +548,29 @@ public class ManagerLoanService {
 			return;
 		}
 
-		boolean alreadyOpen = agentTaskRepository.existsByLoanApplicationIdAndAgentIdAndTaskTypeAndTaskStatusIn(
-				application.getId(),
-				assignedAgent.getId(),
-				AgentTaskType.VERIFICATION,
-				List.of(TaskStatus.ASSIGNED, TaskStatus.ACCEPTED, TaskStatus.IN_PROGRESS)
-		);
-		if (alreadyOpen) {
+		List<TaskStatus> openStatuses = List.of(TaskStatus.ASSIGNED, TaskStatus.ACCEPTED, TaskStatus.IN_PROGRESS);
+		AgentTask openTask = agentTaskRepository
+				.findTopByLoanApplicationIdAndTaskTypeAndTaskStatusInOrderByCreatedAtDesc(
+						application.getId(),
+						AgentTaskType.VERIFICATION,
+						openStatuses
+				)
+				.orElse(null);
+
+		if (openTask != null) {
+			if (openTask.getAgent() != null && assignedAgent.getId().equals(openTask.getAgent().getId())) {
+				return;
+			}
+
+			openTask.setAgent(assignedAgent);
+			openTask.setAssignedBy(assignedBy);
+			openTask.setTaskStatus(TaskStatus.ASSIGNED);
+			openTask.setAcceptedAt(null);
+			openTask.setStartedAt(null);
+			openTask.setCompletedAt(null);
+			openTask.setDeclineReason(null);
+			openTask.setDeadline(LocalDateTime.now().plusHours(48));
+			agentTaskRepository.save(openTask);
 			return;
 		}
 
@@ -571,18 +590,26 @@ public class ManagerLoanService {
 	}
 
 	private void ensureCashCollectionTask(LoanApplication application, Users assignedAgent, Users assignedBy) {
-		if (application.getId() == null || assignedAgent == null) {
+		if (application.getId() == null) {
 			return;
 		}
 
-		boolean alreadyOpen = agentTaskRepository.existsByLoanApplicationIdAndAgentIdAndTaskTypeAndTaskStatusIn(
+		boolean alreadyOpen = agentTaskRepository.existsByLoanApplicationIdAndTaskTypeAndTaskStatusIn(
 				application.getId(),
-				assignedAgent.getId(),
 				AgentTaskType.CASH_COLLECTION,
 				List.of(TaskStatus.ASSIGNED, TaskStatus.ACCEPTED, TaskStatus.IN_PROGRESS)
 		);
 		if (alreadyOpen) {
 			return;
+		}
+
+		Loan loan = loanRepository.findByLoanApplicationId(application.getId()).orElse(null);
+		LocalDateTime deadline = LocalDateTime.now().plusHours(72);
+		if (loan != null && loan.getFirstEmiDate() != null) {
+			LocalDateTime dueEndOfDay = loan.getFirstEmiDate().atTime(23, 59, 59);
+			if (dueEndOfDay.isAfter(LocalDateTime.now())) {
+				deadline = dueEndOfDay;
+			}
 		}
 
 		AgentTask task = AgentTask.builder()
@@ -595,7 +622,37 @@ public class ManagerLoanService {
 				.taskStatus(TaskStatus.ASSIGNED)
 				.taskDescription("Collect EMI installments from borrower as per schedule.")
 				.priorityLevel("MEDIUM")
-				.deadline(LocalDateTime.now().plusHours(72))
+				.deadline(deadline)
+				.otpRequired(true)
+				.build();
+		agentTaskRepository.save(task);
+	}
+
+	private void ensureCashDisbursalTask(LoanApplication application, Users assignedAgent, Users assignedBy) {
+		if (application.getId() == null || assignedAgent == null || assignedAgent.getId() == null) {
+			return;
+		}
+
+		boolean alreadyOpen = agentTaskRepository.existsByLoanApplicationIdAndTaskTypeAndTaskStatusIn(
+				application.getId(),
+				AgentTaskType.CASH_DISBURSAL,
+				List.of(TaskStatus.ASSIGNED, TaskStatus.ACCEPTED, TaskStatus.IN_PROGRESS)
+		);
+		if (alreadyOpen) {
+			return;
+		}
+
+		AgentTask task = AgentTask.builder()
+				.taskCode("TSK-DIS-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
+						+ "-" + UUID.randomUUID().toString().substring(0, 5).toUpperCase())
+				.loanApplication(application)
+				.agent(assignedAgent)
+				.assignedBy(assignedBy)
+				.taskType(AgentTaskType.CASH_DISBURSAL)
+				.taskStatus(TaskStatus.ASSIGNED)
+				.taskDescription("Collect approved cash from officer and hand over to borrower with OTP confirmation.")
+				.priorityLevel("HIGH")
+				.deadline(LocalDateTime.now().plusHours(24))
 				.otpRequired(true)
 				.build();
 		agentTaskRepository.save(task);

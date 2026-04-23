@@ -2,7 +2,9 @@ package com.microfinance.loan.agent.controller;
 
 import com.microfinance.loan.agent.dto.request.VerificationImageRequest;
 import com.microfinance.loan.agent.dto.request.VerificationReportRequest;
+import com.microfinance.loan.agent.dto.request.VerificationSubmissionRequest;
 import com.microfinance.loan.agent.dto.response.VerificationReportResponse;
+import com.microfinance.loan.agent.dto.response.VerificationSubmissionResponse;
 import com.microfinance.loan.agent.service.AgentVerificationService;
 import com.microfinance.loan.common.dto.ApiResponse;
 import com.microfinance.loan.common.service.CurrentUserService;
@@ -15,12 +17,14 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/agents/tasks")
@@ -64,5 +68,16 @@ public class AgentVerificationController {
         Long agentId = currentUserService.getCurrentUserId(authentication);
         return ApiResponse.success("Verification image uploaded",
                 agentVerificationService.uploadImage(agentId, taskId, request, file));
+    }
+
+    @PreAuthorize("hasRole('AGENT')")
+    @PostMapping(value = "/{taskId}/verification/submit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<VerificationSubmissionResponse> submitVerification(Authentication authentication,
+                                                                          @PathVariable Long taskId,
+                                                                          @RequestPart("payload") @Valid VerificationSubmissionRequest request,
+                                                                          @RequestPart("files") List<MultipartFile> files) throws IOException {
+        Long agentId = currentUserService.getCurrentUserId(authentication);
+        return ApiResponse.success("Verification submitted and task completed",
+                agentVerificationService.submitVerification(agentId, taskId, request, files));
     }
 }

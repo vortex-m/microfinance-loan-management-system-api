@@ -83,6 +83,9 @@ public class StaffService {
                 .department(request.getDepartment().name())
                 .branch(branchProfile.getBranchName())
                 .branchCode(branchProfile.getBranchCode())
+                .assignedCity(branchProfile.getCity())
+                .assignedState(branchProfile.getState())
+                .assignedZone(branchProfile.getRegionName())
                 .branchProfile(branchProfile)
                 .agentStatus(AgentStatus.ACTIVE)
                 .build();

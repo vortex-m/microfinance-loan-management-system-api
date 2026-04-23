@@ -23,6 +23,12 @@ public interface LoanApplicationRepository extends JpaRepository<LoanApplication
     @EntityGraph(attributePaths = {"user", "assignedOfficer", "assignedAgent"})
     List<LoanApplication> findByUserIdOrderByCreatedAtDesc(Long userId);
 
+    @EntityGraph(attributePaths = {"user", "assignedOfficer", "assignedAgent"})
+    List<LoanApplication> findByAssignedAgentIdOrderByUpdatedAtDesc(Long agentId);
+
+    @Query("select count(distinct la.user.id) from LoanApplication la where la.assignedAgent.id = :agentId")
+    long countDistinctAssignedUsersByAgentId(@Param("agentId") Long agentId);
+
     @Query("select la from LoanApplication la " +
             "join fetch la.user u " +
             "join UserProfile up on up.users.id = u.id " +

@@ -53,6 +53,15 @@ public class AgentProfileService {
 		profile.setState(request.getState().trim());
 		profile.setPincode(request.getPincode().trim());
 
+		String branchCity = profile.getBranchProfile() != null ? profile.getBranchProfile().getCity() : null;
+		String branchState = profile.getBranchProfile() != null ? profile.getBranchProfile().getState() : null;
+		String branchRegion = profile.getBranchProfile() != null ? profile.getBranchProfile().getRegionName() : null;
+		profile.setAssignedCity(StringUtils.hasText(branchCity) ? branchCity : request.getCity().trim());
+		profile.setAssignedState(StringUtils.hasText(branchState) ? branchState : request.getState().trim());
+		if (StringUtils.hasText(branchRegion)) {
+			profile.setAssignedZone(branchRegion);
+		}
+
 		user.setIsHome(isOnboardingComplete(profile));
 
 		AgentProfile savedProfile = agentProfileRepository.save(profile);

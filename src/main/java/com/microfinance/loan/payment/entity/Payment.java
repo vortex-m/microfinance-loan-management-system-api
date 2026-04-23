@@ -108,10 +108,18 @@ public class Payment {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
-        this.paymentStatus = PaymentStatus.INITIATED;
-        this.initiatedAt = LocalDateTime.now();
-        this.excessAmount = 0.0;
-        this.penaltyPaid = 0.0;
+        if (this.paymentStatus == null) {
+            this.paymentStatus = PaymentStatus.INITIATED;
+        }
+        if (this.initiatedAt == null) {
+            this.initiatedAt = LocalDateTime.now();
+        }
+        if (this.excessAmount == null) {
+            this.excessAmount = 0.0;
+        }
+        if (this.penaltyPaid == null) {
+            this.penaltyPaid = 0.0;
+        }
         if (this.settlementStatus == null) {
             this.settlementStatus = "CASH".equalsIgnoreCase(this.paymentMode)
                     ? CashSettlementStatus.COLLECTED_UNSETTLED

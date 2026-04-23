@@ -4,21 +4,30 @@ import com.microfinance.loan.agent.entity.AgentProfile;
 import com.microfinance.loan.agent.entity.AgentTask;
 import com.microfinance.loan.agent.entity.VerificationImage;
 import com.microfinance.loan.agent.entity.VerificationReport;
+import com.microfinance.loan.agent.dto.response.CashDisbursalOtpResponse;
 import com.microfinance.loan.agent.repository.AgentProfileRepository;
 import com.microfinance.loan.agent.repository.AgentTaskRepository;
 import com.microfinance.loan.agent.repository.VerificationImageRepository;
 import com.microfinance.loan.agent.repository.VerificationReportRepository;
 import com.microfinance.loan.common.entity.Users;
+import com.microfinance.loan.common.enums.AgentAvailability;
 import com.microfinance.loan.common.enums.AgentTaskType;
+import com.microfinance.loan.common.enums.CashOtpStatus;
+import com.microfinance.loan.common.enums.DisbursalMode;
 import com.microfinance.loan.common.enums.LoanStatus;
 import com.microfinance.loan.common.enums.OfficerStatus;
 import com.microfinance.loan.common.enums.AgentStatus;
 import com.microfinance.loan.common.enums.TaskStatus;
 import com.microfinance.loan.common.enums.VerificationStatus;
 import com.microfinance.loan.common.service.CurrentUserService;
+import com.microfinance.loan.common.service.MailService;
 import com.microfinance.loan.manager.dto.request.LoanAgentAssignmentRequest;
 import com.microfinance.loan.officer.dto.request.LoanDecisionRequest;
+import com.microfinance.loan.officer.dto.request.OfficerCashHandoverOtpGenerateRequest;
+import com.microfinance.loan.officer.dto.request.OfficerCashHandoverOtpVerifyRequest;
 import com.microfinance.loan.officer.dto.response.LoanReviewResponse;
+import com.microfinance.loan.officer.dto.response.OfficerAssignableAgentResponse;
+import com.microfinance.loan.officer.dto.response.OfficerCashDisbursalQueueResponse;
 import com.microfinance.loan.officer.dto.response.OfficerUserProfileResponse;
 import com.microfinance.loan.officer.dto.response.VerificationEvidenceResponse;
 import com.microfinance.loan.officer.entity.LoanReview;
@@ -32,6 +41,7 @@ import com.microfinance.loan.user.repository.KycDocumentRepository;
 import com.microfinance.loan.user.repository.LoanApplicationRepository;
 import com.microfinance.loan.user.repository.UserProfileRepository;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -40,9 +50,12 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class OfficerLoanReviewService {
+
+	private static final int OTP_MAX_ATTEMPTS = 3;
 
 	private final LoanApplicationRepository loanApplicationRepository;
 	private final OfficerProfileRepository officerProfileRepository;
@@ -54,6 +67,8 @@ public class OfficerLoanReviewService {
 	private final VerificationReportRepository verificationReportRepository;
 	private final VerificationImageRepository verificationImageRepository;
 	private final KycDocumentRepository kycDocumentRepository;
+	private final PasswordEncoder passwordEncoder;
+	private final MailService mailService;
 
 	public OfficerLoanReviewService(LoanApplicationRepository loanApplicationRepository,
 									OfficerProfileRepository officerProfileRepository,
@@ -63,8 +78,10 @@ public class OfficerLoanReviewService {
 									AgentProfileRepository agentProfileRepository,
 									AgentTaskRepository agentTaskRepository,
 									VerificationReportRepository verificationReportRepository,
-															VerificationImageRepository verificationImageRepository,
-															KycDocumentRepository kycDocumentRepository) {
+														VerificationImageRepository verificationImageRepository,
+														KycDocumentRepository kycDocumentRepository,
+														PasswordEncoder passwordEncoder,
+														MailService mailService) {
 		this.loanApplicationRepository = loanApplicationRepository;
 		this.officerProfileRepository = officerProfileRepository;
 		this.loanReviewRepository = loanReviewRepository;
@@ -74,7 +91,111 @@ public class OfficerLoanReviewService {
 		this.agentTaskRepository = agentTaskRepository;
 		this.verificationReportRepository = verificationReportRepository;
 		this.verificationImageRepository = verificationImageRepository;
-										this.kycDocumentRepository = kycDocumentRepository;
+		this.kycDocumentRepository = kycDocumentRepository;
+		this.passwordEncoder = passwordEncoder;
+		this.mailService = mailService;
+	}
+
+	@Transactional
+	public CashDisbursalOtpResponse generateCashHandoverOtp(Authentication authentication,
+											 OfficerCashHandoverOtpGenerateRequest request) {
+		OfficerProfile officerProfile = getActiveOfficerProfile(authentication);
+		AgentTask task = getCashDisbursalTaskForOfficer(officerProfile, request.getTaskId());
+		LoanApplication application = task.getLoanApplication();
+
+		if (application.getDisbursalMode() != DisbursalMode.CASH) {
+			throw new IllegalArgumentException("Cash handover OTP is allowed only for CASH mode loans");
+		}
+		if (application.getStatus() != LoanStatus.APPROVED) {
+			throw new IllegalArgumentException("Loan must be APPROVED before cash handover");
+		}
+		if (task.getTaskStatus() == TaskStatus.COMPLETED || task.getTaskStatus() == TaskStatus.DECLINED) {
+			throw new IllegalArgumentException("Task is not active for cash handover");
+		}
+		if (task.getAgent() == null || !StringUtils.hasText(task.getAgent().getEmail())) {
+			throw new IllegalArgumentException("Assigned agent email is required for OTP handover");
+		}
+
+		String otp = String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1_000_000));
+		application.setCashDisbursalOtpHash(passwordEncoder.encode(otp));
+		application.setCashDisbursalOtpStatus(CashOtpStatus.ACTIVE);
+		application.setCashDisbursalOtpAttempts(0);
+		application.setCashDisbursalOtpRequestedAt(LocalDateTime.now());
+		application.setCashDisbursalOtpExpiresAt(LocalDateTime.now().plusMinutes(10));
+		application.setCashDisbursalOtpVerifiedAt(null);
+		loanApplicationRepository.save(application);
+
+		task.setOtpRequired(true);
+		task.setOtpRequestedAt(LocalDateTime.now());
+		task.setOtpVerified(false);
+		task.setOtpVerifiedAt(null);
+		task.setAssignedBy(officerProfile.getUsers());
+		agentTaskRepository.save(task);
+
+		mailService.sendCashDisbursalOtp(
+				task.getAgent().getEmail(),
+				task.getAgent().getName(),
+				otp,
+				application.getApplicationNumber()
+		);
+
+		return CashDisbursalOtpResponse.builder()
+				.loanApplicationId(application.getId())
+				.otpStatus(application.getCashDisbursalOtpStatus())
+				.attempts(application.getCashDisbursalOtpAttempts())
+				.expiresAt(application.getCashDisbursalOtpExpiresAt())
+				.message("Cash handover OTP sent to assigned agent email")
+				.build();
+	}
+
+	@Transactional
+	public CashDisbursalOtpResponse verifyCashHandoverOtp(Authentication authentication,
+									   OfficerCashHandoverOtpVerifyRequest request) {
+		OfficerProfile officerProfile = getActiveOfficerProfile(authentication);
+		AgentTask task = getCashDisbursalTaskForOfficer(officerProfile, request.getTaskId());
+		LoanApplication application = task.getLoanApplication();
+
+		if (application.getCashDisbursalOtpStatus() != CashOtpStatus.ACTIVE || application.getCashDisbursalOtpHash() == null) {
+			throw new IllegalArgumentException("No active handover OTP found for this task");
+		}
+
+		if (application.getCashDisbursalOtpExpiresAt() == null || LocalDateTime.now().isAfter(application.getCashDisbursalOtpExpiresAt())) {
+			application.setCashDisbursalOtpStatus(CashOtpStatus.EXPIRED);
+			loanApplicationRepository.save(application);
+			throw new IllegalArgumentException("OTP expired. Please generate a new OTP");
+		}
+
+		if (!passwordEncoder.matches(request.getOtp(), application.getCashDisbursalOtpHash())) {
+			int attempts = application.getCashDisbursalOtpAttempts() == null ? 0 : application.getCashDisbursalOtpAttempts();
+			attempts++;
+			application.setCashDisbursalOtpAttempts(attempts);
+			if (attempts >= OTP_MAX_ATTEMPTS) {
+				application.setCashDisbursalOtpStatus(CashOtpStatus.BLOCKED);
+			}
+			loanApplicationRepository.save(application);
+			throw new IllegalArgumentException(attempts >= OTP_MAX_ATTEMPTS
+					? "OTP blocked due to maximum invalid attempts. Generate a new OTP."
+					: "Invalid OTP. Please try again.");
+		}
+
+		application.setCashDisbursalOtpStatus(CashOtpStatus.USED);
+		application.setCashDisbursalOtpVerifiedAt(LocalDateTime.now());
+		application.setAssignedOfficer(officerProfile.getUsers());
+		loanApplicationRepository.save(application);
+
+		task.setAssignedBy(officerProfile.getUsers());
+		task.setOtpVerified(true);
+		task.setOtpVerifiedAt(LocalDateTime.now());
+		agentTaskRepository.save(task);
+
+		return CashDisbursalOtpResponse.builder()
+				.loanApplicationId(application.getId())
+				.otpStatus(application.getCashDisbursalOtpStatus())
+				.attempts(application.getCashDisbursalOtpAttempts())
+				.expiresAt(application.getCashDisbursalOtpExpiresAt())
+				.verifiedAt(application.getCashDisbursalOtpVerifiedAt())
+				.message("Cash handover verified. Agent can now deliver cash to user")
+				.build();
 	}
 
 	@Transactional
@@ -123,6 +244,43 @@ public class OfficerLoanReviewService {
 		);
 
 		return applications.stream().map(this::toResponse).toList();
+	}
+
+	@Transactional(readOnly = true)
+	public List<OfficerAssignableAgentResponse> getAssignableAgents(Authentication authentication) {
+		OfficerProfile officerProfile = getActiveOfficerProfile(authentication);
+		String branchCode = officerProfile.getBranchProfile().getBranchCode();
+
+		return agentProfileRepository
+				.findActiveAvailableByBranchCode(branchCode, AgentStatus.ACTIVE, AgentAvailability.AVAILABLE)
+				.stream()
+				.map(agent -> OfficerAssignableAgentResponse.builder()
+						.agentUserId(agent.getUsers().getId())
+						.agentCode(agent.getAgentCode())
+						.name(agent.getUsers().getName())
+						.phone(agent.getUsers().getPhone())
+						.build())
+				.toList();
+	}
+
+	@Transactional(readOnly = true)
+	public List<OfficerCashDisbursalQueueResponse> getCashDisbursalQueue(Authentication authentication) {
+		OfficerProfile officerProfile = getActiveOfficerProfile(authentication);
+		String branchCode = officerProfile.getBranchProfile().getBranchCode();
+
+		List<AgentTask> tasks = agentTaskRepository.findByTaskTypeAndTaskStatusInOrderByCreatedAtDesc(
+				AgentTaskType.CASH_DISBURSAL,
+				List.of(TaskStatus.ASSIGNED, TaskStatus.ACCEPTED, TaskStatus.IN_PROGRESS)
+		);
+
+		return tasks.stream()
+				.filter(task -> task.getLoanApplication() != null && task.getLoanApplication().getUser() != null)
+				.filter(task -> userProfileRepository.findByUsersId(task.getLoanApplication().getUser().getId())
+						.map(userProfile -> userProfile.getBranchProfile() != null
+								&& branchCode.equalsIgnoreCase(userProfile.getBranchProfile().getBranchCode()))
+						.orElse(false))
+				.map(this::toCashDisbursalQueueResponse)
+				.toList();
 	}
 
 	@Transactional(readOnly = true)
@@ -386,6 +544,37 @@ public class OfficerLoanReviewService {
 				.build();
 	}
 
+	private OfficerCashDisbursalQueueResponse toCashDisbursalQueueResponse(AgentTask task) {
+		LoanApplication application = task.getLoanApplication();
+		Users assignedAgent = task.getAgent();
+
+		return OfficerCashDisbursalQueueResponse.builder()
+				.taskId(task.getId())
+				.loanApplicationId(application.getId())
+				.applicationNumber(application.getApplicationNumber())
+				.applicantName(application.getUser().getName())
+				.assignedAgentName(assignedAgent != null ? assignedAgent.getName() : null)
+				.assignedAgentEmail(assignedAgent != null ? assignedAgent.getEmail() : null)
+				.loanAmount(application.getApprovedAmount() != null ? application.getApprovedAmount() : application.getRequestedAmount())
+				.otpStatus(application.getCashDisbursalOtpStatus() != null
+						? application.getCashDisbursalOtpStatus().name()
+						: "NOT_GENERATED")
+				.build();
+	}
+
+	private AgentTask getCashDisbursalTaskForOfficer(OfficerProfile officerProfile, Long taskId) {
+		AgentTask task = agentTaskRepository.findById(taskId)
+				.orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
+		if (task.getTaskType() != AgentTaskType.CASH_DISBURSAL) {
+			throw new IllegalArgumentException("Task is not CASH_DISBURSAL type");
+		}
+		if (task.getLoanApplication() == null) {
+			throw new IllegalArgumentException("Task loan mapping is missing");
+		}
+		validateBranchScope(officerProfile, task.getLoanApplication());
+		return task;
+	}
+
 	private String generateReviewCode() {
 		String ts = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
 		String suffix = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
@@ -422,13 +611,29 @@ public class OfficerLoanReviewService {
 			return;
 		}
 
-		boolean alreadyOpen = agentTaskRepository.existsByLoanApplicationIdAndAgentIdAndTaskTypeAndTaskStatusIn(
-				application.getId(),
-				assignedAgent.getId(),
-				AgentTaskType.VERIFICATION,
-				List.of(TaskStatus.ASSIGNED, TaskStatus.ACCEPTED, TaskStatus.IN_PROGRESS)
-		);
-		if (alreadyOpen) {
+		List<TaskStatus> openStatuses = List.of(TaskStatus.ASSIGNED, TaskStatus.ACCEPTED, TaskStatus.IN_PROGRESS);
+		AgentTask openTask = agentTaskRepository
+				.findTopByLoanApplicationIdAndTaskTypeAndTaskStatusInOrderByCreatedAtDesc(
+						application.getId(),
+						AgentTaskType.VERIFICATION,
+						openStatuses
+				)
+				.orElse(null);
+
+		if (openTask != null) {
+			if (openTask.getAgent() != null && assignedAgent.getId().equals(openTask.getAgent().getId())) {
+				return;
+			}
+
+			openTask.setAgent(assignedAgent);
+			openTask.setAssignedBy(assignedBy);
+			openTask.setTaskStatus(TaskStatus.ASSIGNED);
+			openTask.setAcceptedAt(null);
+			openTask.setStartedAt(null);
+			openTask.setCompletedAt(null);
+			openTask.setDeclineReason(null);
+			openTask.setDeadline(LocalDateTime.now().plusHours(48));
+			agentTaskRepository.save(openTask);
 			return;
 		}
 

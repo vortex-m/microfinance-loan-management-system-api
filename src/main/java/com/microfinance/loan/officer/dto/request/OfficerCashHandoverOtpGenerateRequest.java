@@ -1,4 +1,4 @@
-package com.microfinance.loan.agent.dto.request;
+package com.microfinance.loan.officer.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -12,8 +12,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CashDisbursalOtpGenerateRequest {
+public class OfficerCashHandoverOtpGenerateRequest {
 
     @NotNull(message = "Task id is required")
     private Long taskId;
 }
+

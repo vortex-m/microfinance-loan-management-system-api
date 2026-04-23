@@ -15,8 +15,8 @@ import lombok.Setter;
 @Builder
 public class CashDisbursalOtpVerifyRequest {
 
-    @NotNull(message = "Loan application id is required")
-    private Long loanApplicationId;
+    @NotNull(message = "Task id is required")
+    private Long taskId;
 
     @NotBlank(message = "OTP is required")
     private String otp;

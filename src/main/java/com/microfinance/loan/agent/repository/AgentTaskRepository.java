@@ -15,6 +15,8 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
 
 	long countByAgentIdAndTaskStatusAndTaskType(Long agentId, TaskStatus taskStatus, AgentTaskType taskType);
 
+	long countByAgentIsNullAndTaskStatusAndTaskType(TaskStatus taskStatus, AgentTaskType taskType);
+
 	long countByAgentIdAndTaskStatusAndCompletedAtBetween(Long agentId,
 														  TaskStatus taskStatus,
 														  LocalDateTime start,
@@ -24,6 +26,10 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
 																   AgentTaskType taskType,
 																   List<TaskStatus> statuses);
 
+	boolean existsByLoanApplicationIdAndTaskTypeAndTaskStatusIn(Long loanApplicationId,
+										AgentTaskType taskType,
+										List<TaskStatus> statuses);
+
 	java.util.Optional<AgentTask> findByIdAndAgentId(Long taskId, Long agentId);
 
 	List<AgentTask> findByAgentIdOrderByCreatedAtDesc(Long agentId);
@@ -31,6 +37,9 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
 	List<AgentTask> findByAgentIdAndTaskStatusOrderByCreatedAtDesc(Long agentId, TaskStatus taskStatus);
 
 	List<AgentTask> findByAgentIdAndTaskTypeOrderByCreatedAtDesc(Long agentId, AgentTaskType taskType);
+
+	List<AgentTask> findByAgentIsNullAndTaskStatusAndTaskTypeOrderByCreatedAtDesc(TaskStatus taskStatus,
+															 AgentTaskType taskType);
 
 	List<AgentTask> findByAgentIdAndTaskStatusAndTaskTypeOrderByCreatedAtDesc(Long agentId,
 																TaskStatus taskStatus,
@@ -46,6 +55,17 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
 	java.util.Optional<AgentTask> findTopByLoanApplicationIdAndTaskTypeOrderByCreatedAtDesc(
 			Long loanApplicationId,
 			AgentTaskType taskType
+	);
+
+	java.util.Optional<AgentTask> findTopByLoanApplicationIdAndTaskTypeAndTaskStatusInOrderByCreatedAtDesc(
+			Long loanApplicationId,
+			AgentTaskType taskType,
+			List<TaskStatus> statuses
+	);
+
+	List<AgentTask> findByTaskTypeAndTaskStatusInOrderByCreatedAtDesc(
+			AgentTaskType taskType,
+			List<TaskStatus> statuses
 	);
 
 }

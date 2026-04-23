@@ -1,9 +1,14 @@
 package com.microfinance.loan.officer.controller;
 
+import com.microfinance.loan.agent.dto.response.CashDisbursalOtpResponse;
 import com.microfinance.loan.common.dto.ApiResponse;
 import com.microfinance.loan.manager.dto.request.LoanAgentAssignmentRequest;
 import com.microfinance.loan.officer.dto.request.LoanDecisionRequest;
+import com.microfinance.loan.officer.dto.request.OfficerCashHandoverOtpGenerateRequest;
+import com.microfinance.loan.officer.dto.request.OfficerCashHandoverOtpVerifyRequest;
+import com.microfinance.loan.officer.dto.response.OfficerAssignableAgentResponse;
 import com.microfinance.loan.officer.dto.response.LoanReviewResponse;
+import com.microfinance.loan.officer.dto.response.OfficerCashDisbursalQueueResponse;
 import com.microfinance.loan.officer.dto.response.OfficerUserProfileResponse;
 import com.microfinance.loan.officer.dto.response.VerificationEvidenceResponse;
 import com.microfinance.loan.officer.service.OfficerLoanReviewService;
@@ -39,6 +44,15 @@ public class OfficerLoanReviewController {
 	}
 
 	@PreAuthorize("hasRole('OFFICER')")
+	@GetMapping("/agents/available")
+	public ApiResponse<List<OfficerAssignableAgentResponse>> getAssignableAgents(Authentication authentication) {
+		return ApiResponse.success(
+				"Assignable agents fetched successfully",
+				officerLoanReviewService.getAssignableAgents(authentication)
+		);
+	}
+
+	@PreAuthorize("hasRole('OFFICER')")
 	@PostMapping("/{loanApplicationId}/decision")
 	public ApiResponse<LoanReviewResponse> submitDecision(Authentication authentication,
 														  @PathVariable Long loanApplicationId,
@@ -57,6 +71,35 @@ public class OfficerLoanReviewController {
 		return ApiResponse.success(
 				"Agent assigned successfully",
 				officerLoanReviewService.assignAgent(authentication, loanApplicationId, request)
+		);
+	}
+
+	@PreAuthorize("hasRole('OFFICER')")
+	@GetMapping("/cash-disbursal/pending")
+	public ApiResponse<List<OfficerCashDisbursalQueueResponse>> getCashDisbursalQueue(Authentication authentication) {
+		return ApiResponse.success(
+				"Cash disbursal queue fetched successfully",
+				officerLoanReviewService.getCashDisbursalQueue(authentication)
+		);
+	}
+
+	@PreAuthorize("hasRole('OFFICER')")
+	@PostMapping("/cash-disbursal/otp/generate")
+	public ApiResponse<CashDisbursalOtpResponse> generateCashHandoverOtp(Authentication authentication,
+													 @Valid @RequestBody OfficerCashHandoverOtpGenerateRequest request) {
+		return ApiResponse.success(
+				"Cash handover OTP generated successfully",
+				officerLoanReviewService.generateCashHandoverOtp(authentication, request)
+		);
+	}
+
+	@PreAuthorize("hasRole('OFFICER')")
+	@PostMapping("/cash-disbursal/otp/verify")
+	public ApiResponse<CashDisbursalOtpResponse> verifyCashHandoverOtp(Authentication authentication,
+												   @Valid @RequestBody OfficerCashHandoverOtpVerifyRequest request) {
+		return ApiResponse.success(
+				"Cash handover OTP verified successfully",
+				officerLoanReviewService.verifyCashHandoverOtp(authentication, request)
 		);
 	}
 
